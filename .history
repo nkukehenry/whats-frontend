@@ -1,0 +1,34 @@
+# Project History and Next Steps
+
+## Project Overview
+- **What:** This is the frontend for a WhatsApp SaaS platform.
+- **Purpose:** Allows users to register, log in, manage subscriptions, add WhatsApp devices, and send messages via a clean, modern web interface.
+- **Tech Stack:** Next.js (React), Tailwind CSS, Redux Toolkit, TypeScript.
+- **Backend:** Connects to a Node.js/Express/Prisma backend with WhatsApp integration and subscription management.
+
+## Design Instructions
+- Use the provided login design as reference for the UI.
+- Color palette: #4ECB6F (primary green), #000000 (black), #F6F6F6 (light), #EAF8ED (background).
+- Typography: Lato Bold and Lato Regular for all text.
+- Consistent use of these styles throughout the app.
+
+## Last Completed Step
+- Set up Tailwind CSS with custom colors and Lato font in `tailwind.config.js`.
+- Imported Lato font globally in `layout.tsx` and applied as default font.
+- Set up global background color and font for the app.
+
+## Intended Next Steps
+1. Create the login page UI to match the provided design, using the new theme.
+2. Scaffold registration, subscription, add device, and messaging forms.
+3. Set up Redux Toolkit for state management (auth, user, subscription, device, messaging slices).
+4. Build out the registration, login, subscription, add device, and messaging flows with clean, maintainable code.
+
+## Important Notes
+- **Keep code clean and avoid overengineering.**
+- **All UI should follow the provided color palette and typography.**
+- **Use Redux Toolkit for all global state management.**
+- **Prioritize user experience and accessibility.**
+- **Document any major design or architectural decisions in this file.**
+
+---
+(Use this file to track design requirements, completed steps, next actions, and important context for the frontend project.) 
