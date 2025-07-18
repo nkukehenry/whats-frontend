@@ -98,33 +98,6 @@ export default function DashboardPage() {
     },
   ];
 
-  const recentActivity = [
-    {
-      type: "message_sent",
-      title: "Message sent successfully",
-      description: "To +256777245670",
-      time: "2 minutes ago",
-      icon: CheckCircle,
-      color: "text-green-600",
-    },
-    {
-      type: "device_connected",
-      title: "Device connected",
-      description: "iPhone 12 Pro",
-      time: "5 minutes ago",
-      icon: Smartphone,
-      color: "text-blue-600",
-    },
-    {
-      type: "bulk_message",
-      title: "Bulk message completed",
-      description: "Sent to 50 recipients",
-      time: "1 hour ago",
-      icon: Rocket,
-      color: "text-purple-600",
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -183,31 +156,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => {
-                const Icon = activity.icon;
-                return (
-                  <div key={index} className="flex items-center gap-4">
-                    <div className={`p-2 rounded-lg bg-gray-100`}>
-                      <Icon className={`w-5 h-5 ${activity.color}`} />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{activity.title}</h4>
-                      <p className="text-sm text-gray-600">{activity.description}</p>
-                    </div>
-                    <span className="text-sm text-gray-500">{activity.time}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        {/* Removed Recent Activity section */}
       </div>
     </div>
   );
