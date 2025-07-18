@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://whatsapi.mutindo.com/api/v1';
 
 export async function refreshTokenRequest(refreshToken: string) {
   const res = await fetch(`${API_BASE}/auth/refresh-token`, {

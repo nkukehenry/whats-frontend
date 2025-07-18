@@ -294,11 +294,12 @@ export default function LoginPage() {
                 </button>
 
                 {/* Google Sign In */}
-                <button
+                <button 
+                  onClick={() => router.push("/register")}
                   type="button"
                   className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center"
                 >
-                  <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                  {/* <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -315,14 +316,14 @@ export default function LoginPage() {
                       fill="#EA4335"
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
-                  </svg>
-                  Sign in with Google
+                  </svg> */}
+                  Register
                 </button>
 
                 {/* Sign Up Link */}
                 <p className="text-center text-sm text-gray-600">
                   Don&apos;t have an account?{" "}
-                  <button type="button" className="text-green-600 hover:text-green-700 font-medium">
+                  <button type="button"   className="text-green-600 hover:text-green-700 font-medium" onClick={() => router.push("/register")}>
                     Sign up
                   </button>
                 </p>
