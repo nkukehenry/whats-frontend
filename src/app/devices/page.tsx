@@ -236,19 +236,19 @@ export default function DevicesPage() {
       {/* Sidebar */}
       <Sidebar activeTab="devices" />
 
-      {/* Main Content */}
+      {/* Main Content and Right Sidebar */}
       <div className="flex-1 flex">
-        <div className="flex-1 p-8">
+        {/* Main Content */}
+        <div className="flex-1 p-2 md:p-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
             <div className="flex items-center gap-3">
               <Smartphone className="w-6 h-6 text-green-600" />
               <h1 className="text-2xl font-bold text-gray-900">My Devices</h1>
-              {/* Removed: <WebSocketStatus showDetails={true} /> */}
             </div>
             <button
               onClick={handleAddDevice}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium w-full sm:w-auto justify-center"
             >
               <Plus className="w-4 h-4" />
               Add Device
@@ -260,7 +260,7 @@ export default function DevicesPage() {
 
           {/* Stats */}
           <div className="mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-0 md:gap-6">
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -341,7 +341,7 @@ export default function DevicesPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">Your Devices</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {devices.map((device) => renderDeviceCard(device))}
                 </div>
               </>
@@ -350,7 +350,7 @@ export default function DevicesPage() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-80 bg-white border-l border-gray-200 p-6">
+        <div className="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l border-gray-200 p-2 md:p-6 flex-shrink-0 overflow-auto">
           <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
             <HelpCircle className="w-5 h-5 text-green-600" />
             How To Get Started?
@@ -394,8 +394,12 @@ export default function DevicesPage() {
               Need Help?
             </h4>
             <p className="text-sm text-gray-600 mb-4">Check our documentation or contact support</p>
-            <button className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors font-medium">
-              Get Help
+            <button
+              className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+              onClick={() => router.push("/help")}
+            >
+              <HelpCircle className="w-4 h-4" />
+              Help & Support
             </button>
           </div>
         </div>

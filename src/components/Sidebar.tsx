@@ -130,6 +130,16 @@ export default function Sidebar({
                 </button>
               );
             })}
+            {/* Developer Docs Link */}
+            <button
+              onClick={() => router.push("/dev-docs")}
+              className={`w-full text-left px-4 py-2 rounded-lg transition-all flex items-center gap-3 ${
+                activeTab === "dev-docs" ? "bg-green-600 text-white" : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span className="font-medium">Developer Docs</span>
+            </button>
             <button
               onClick={handleLogout}
               className="w-full text-left px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-all flex items-center gap-3"

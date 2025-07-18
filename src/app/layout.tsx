@@ -8,6 +8,7 @@ import Providers from './providers';
 export const metadata: Metadata = {
   title: 'WhatsApp SaaS',
   description: 'Scalable WhatsApp API client with subscription management',
+  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
