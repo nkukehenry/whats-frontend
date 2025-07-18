@@ -135,4 +135,35 @@ export const fetchDeviceStatusThunk = createAsyncThunk<
       return rejectWithValue('Unknown error');
     }
   }
+);
+
+export const removeDeviceThunk = createAsyncThunk<
+  number, // returns the removed deviceId
+  { deviceId: number },
+  { state: RootState; rejectValue: string }
+>(
+  'devices/remove',
+  async (
+    { deviceId },
+    { getState, rejectWithValue }
+  ) => {
+    const state = getState() as RootState;
+    const token = state.auth.token;
+    if (!token) return rejectWithValue('Not authenticated');
+    try {
+      await apiFetch<{ success: boolean }>(
+        `/devices/remove/${deviceId}`,
+        {
+          method: 'DELETE',
+          token,
+        }
+      );
+      return deviceId;
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        return rejectWithValue((err as { message?: string }).message || 'Unknown error');
+      }
+      return rejectWithValue('Unknown error');
+    }
+  }
 ); 

@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../../hooks";
-import { addDeviceThunk, fetchDevicesThunk } from "../../../slices/deviceThunks";
+import { addDeviceThunk, fetchDevicesThunk, fetchDeviceStatusThunk } from "../../../slices/deviceThunks";
+import { selectDeviceStatus } from "../../../slices/deviceSlice";
 import { logout } from "../../../slices/authSlice";
 import { useRouter } from "next/navigation";
 import Sidebar from "../../../components/Sidebar";
@@ -19,6 +20,7 @@ import {
   Wifi,
   RefreshCw,
 } from "lucide-react";
+import { DeviceStatusIndicator } from "../../../components/DeviceStatusIndicator";
 
 type ResultType = {
   deviceId: number;
@@ -40,78 +42,33 @@ export default function AddDevicePage() {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<"form" | "qr" | "success">("form");
   const [copied, setCopied] = useState(false);
-  
-  // WebSocket state
-  const [connectionProgress, setConnectionProgress] = useState<string>("");
-  const [qrCodeStatus, setQrCodeStatus] = useState<'generated' | 'scanned' | 'expired' | 'error'>('generated');
 
-  // New state for QR code
-  const [qrData, setQrData] = useState<string | null>(null);
-  const [qrTimer, setQrTimer] = useState<number>(60);
-  const [qrExpired, setQrExpired] = useState(false);
+  // Redux device status
+  const deviceStatus = useAppSelector((state) =>
+    result?.deviceId ? selectDeviceStatus(state, result.deviceId) : undefined
+  );
+
+  // Poll device status using thunk
+  useEffect(() => {
+    if (result?.deviceId) {
+      const pollStatus = () => {
+        dispatch(fetchDeviceStatusThunk({ deviceId: result.deviceId }));
+      };
+      const interval = setInterval(pollStatus, 5000);
+      pollStatus();
+      return () => clearInterval(interval);
+    }
+  }, [result?.deviceId, dispatch]);
 
   const handleBackToDevices = useCallback(() => {
     dispatch(fetchDevicesThunk()); // Refresh devices list
     router.push("/devices");
   }, [dispatch, router]);
 
-  // After device creation, use HTTP polling to fetch device status and QR code
-  useEffect(() => {
-    if (result?.deviceId) {
-      setConnectionProgress("Checking device status...");
-      const pollStatus = async () => {
-        try {
-          const res = await fetch(`/api/v1/devices/status/${result.deviceId}`, {
-            headers: {
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-            }
-          });
-          const data = await res.json();
-          if (data.isActive || data.status === 'connected') {
-            setQrCodeStatus('scanned');
-            setConnectionProgress("Device connected successfully!");
-            setTimeout(() => {
-              setStep("success");
-              setTimeout(() => {
-                handleBackToDevices();
-              }, 2000);
-            }, 1000);
-          } else if (data.status === 'error') {
-            setQrCodeStatus('error');
-            setConnectionProgress("Connection failed. Please try again.");
-          } else if (data.status === 'connecting') {
-            setConnectionProgress("Connecting to WhatsApp...");
-          }
-          if (data.qrData) {
-            setQrData(data.qrData);
-            setQrExpired(false);
-            setQrTimer(60);
-            setQrCodeStatus('generated');
-            setConnectionProgress('Scan the QR code with your WhatsApp app.');
-          }
-        } catch (err) {
-          setConnectionProgress("Connection error. Please try again.");
-          setQrCodeStatus('error');
-        }
-      };
-      const interval = setInterval(pollStatus, 5000);
-      pollStatus();
-      return () => clearInterval(interval);
-    }
-  }, [result?.deviceId, token, handleBackToDevices]);
-
   // Retry logic
   const handleRetryQr = () => {
-    setQrExpired(false);
-    setQrTimer(60);
-    setQrData(null);
-    setQrCodeStatus('generated');
-    setConnectionProgress('Requesting new QR code...');
     if (result?.deviceId) {
-      console.log("[DEBUG] Polling get_device_status for", result.deviceId);
-      // This part of the logic needs to be re-evaluated for HTTP polling
-      // For now, we'll just show a message, as the polling effect handles updates
-      // setConnectionProgress("Polling for new QR code...");
+      dispatch(fetchDeviceStatusThunk({ deviceId: result.deviceId }));
     }
   };
 
@@ -144,8 +101,6 @@ export default function AddDevicePage() {
     setError(null);
     setResult(null);
     setLoading(true);
-    setConnectionProgress("");
-    setQrCodeStatus('generated');
     try {
       const data = await dispatch(addDeviceThunk(form)).unwrap();
       // Map API response to ResultType
@@ -158,7 +113,6 @@ export default function AddDevicePage() {
         status: data.status,
       });
       setStep("qr");
-      setConnectionProgress("QR code generated. Waiting for scan...");
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'message' in err) {
         setError((err as { message?: string }).message || "Failed to add device");
@@ -200,8 +154,6 @@ export default function AddDevicePage() {
     setResult(null);
     setError(null);
     setStep("form");
-    setConnectionProgress("");
-    setQrCodeStatus('generated');
   };
 
   if (!token) {
@@ -335,72 +287,32 @@ export default function AddDevicePage() {
                   
                   {/* WebSocket Connection Status */}
                   <div className="mt-4 flex items-center justify-center gap-2">
-                    {/* Removed WebSocket status display */}
+                    <DeviceStatusIndicator deviceId={result.deviceId} />
                   </div>
 
                   {/* QR Timer */}
-                  {qrData && !qrExpired && (
-                    <div className="mt-2 text-sm text-blue-700">QR expires in {qrTimer}s</div>
-                  )}
-                  {qrExpired && (
-                    <div className="mt-2 text-sm text-red-600 font-semibold">QR code expired. Please retry.</div>
-                  )}
+                  {/* Removed QR Timer display */}
+                  {/* Removed QR Expired display */}
                 </div>
 
                 {/* Real-time Connection Progress */}
-                {connectionProgress && (
-                  <div className={`rounded-lg p-4 border ${
-                    qrCodeStatus === 'scanned' ? 'bg-green-50 border-green-200' :
-                    qrCodeStatus === 'error' ? 'bg-red-50 border-red-200' :
-                    'bg-blue-50 border-blue-200'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      {qrCodeStatus === 'scanned' ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      ) : qrCodeStatus === 'error' ? (
-                        <AlertCircle className="w-5 h-5 text-red-600" />
-                      ) : (
-                        <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                      )}
-                      <div className="flex-1">
-                        <p className={`font-medium ${
-                          qrCodeStatus === 'scanned' ? 'text-green-700' :
-                          qrCodeStatus === 'error' ? 'text-red-700' :
-                          'text-blue-700'
-                        }`}>
-                          {connectionProgress}
-                        </p>
-                        {/* Removed deviceStatus display */}
-                      </div>
-                      {qrCodeStatus === 'error' && (
-                        <button
-                          onClick={handleReconnectDevice}
-                          className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          Retry
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {/* Removed connectionProgress display */}
 
                 {/* Retry Button */}
-                {qrExpired && (
-                  <button
-                    onClick={handleRetryQr}
-                    className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors"
-                  >
-                    Retry
-                  </button>
-                )}
+                {/* Removed Retry Button */}
 
                 <div className="flex flex-col items-center space-y-6">
                   {/* QR Code */}
                   <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm">
-                    {qrData && !qrExpired ? (
+                    {deviceStatus?.qrDataUrl ? (
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=256x256`}
+                        src={deviceStatus.qrDataUrl}
+                        alt="WhatsApp QR Code"
+                        className="w-64 h-64 rounded-lg"
+                      />
+                    ) : deviceStatus?.qr ? (
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(deviceStatus.qr)}&size=256x256`}
                         alt="WhatsApp QR Code"
                         className="w-64 h-64 rounded-lg"
                       />
@@ -414,10 +326,10 @@ export default function AddDevicePage() {
                   <button
                     onClick={handleRetryQr}
                     className={`px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2
-                      ${qrExpired ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                      ${false ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                   >
                     <RefreshCw className="w-4 h-4" />
-                    {qrExpired ? 'Retry' : 'Refresh QR'}
+                    Refresh QR
                   </button>
 
                   {/* Device Info */}
@@ -557,15 +469,15 @@ export default function AddDevicePage() {
                     {/* Removed isConnected display */}
                   </div>
                   {/* Removed deviceStatus display */}
-                  {qrCodeStatus && (
+                  {deviceStatus && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">QR Code:</span>
                       <span className={`font-medium ${
-                        qrCodeStatus === 'scanned' ? 'text-green-600' :
-                        qrCodeStatus === 'error' ? 'text-red-600' :
+                        deviceStatus.status === 'scanned' ? 'text-green-600' :
+                        deviceStatus.status === 'error' ? 'text-red-600' :
                         'text-blue-600'
                       }`}>
-                        {qrCodeStatus}
+                        {deviceStatus.status}
                       </span>
                     </div>
                   )}
@@ -580,10 +492,10 @@ export default function AddDevicePage() {
                 </h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   {/* Removed isConnected and deviceStatus.status checks */}
-                  {qrCodeStatus === 'generated' && (
+                  {deviceStatus?.status === 'generated' && (
                     <li>• QR code is active - scan it with WhatsApp</li>
                   )}
-                  {qrCodeStatus === 'scanned' && (
+                  {deviceStatus?.status === 'scanned' && (
                     <li>• QR code scanned - device is connecting...</li>
                   )}
                 </ul>

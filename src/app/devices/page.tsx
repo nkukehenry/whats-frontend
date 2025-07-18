@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../hooks";
-import { fetchDevicesThunk, fetchDeviceStatusThunk } from "../../slices/deviceThunks";
+import { fetchDevicesThunk, fetchDeviceStatusThunk, removeDeviceThunk } from "../../slices/deviceThunks";
 import { logout } from "../../slices/authSlice";
 import { useRouter } from "next/navigation";
 import Sidebar from "../../components/Sidebar";
@@ -27,9 +27,6 @@ import {
 } from "lucide-react";
 import { Device } from "../../slices/deviceSlice";
 import { DeviceStatusIndicator } from "../../components/DeviceStatusIndicator";
-// Removed: import { WebSocketStatus } from "../../components/WebSocketStatus";
-// Removed: import { MessageNotification } from "../../components/MessageNotification";
-// Removed: import { useWebSocket } from "../../hooks/useWebSocket";
 
 export default function DevicesPage() {
   const dispatch = useAppDispatch();
@@ -37,14 +34,12 @@ export default function DevicesPage() {
   const { user } = useAppSelector((state) => state.auth);
   const { devices, loading, error } = useAppSelector((state) => state.devices);
   const token = useAppSelector((state) => state.auth.token);
-  // Removed: const { getDeviceStatus, isConnected, socket } = useWebSocket();
   const [deviceQrMap, setDeviceQrMap] = useState<{ [deviceId: number]: { qr?: string; qrDataUrl?: string } }>({});
   const [deviceStatusMap, setDeviceStatusMap] = useState<{ [deviceId: number]: string }>({});
   const [qrTimers, setQrTimers] = useState<{ [deviceId: number]: number }>({});
   const [qrExpiredMap, setQrExpiredMap] = useState<{ [deviceId: number]: boolean }>({});
   const [qrInitializingMap, setQrInitializingMap] = useState<{ [deviceId: number]: boolean }>({});
   const qrIntervalRefs = React.useRef<{ [deviceId: number]: NodeJS.Timeout }>({});
-  // Removed: const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   console.log('DevicesPage render, devices:', devices, 'deviceQrMap:', deviceQrMap);
 
@@ -109,6 +104,16 @@ export default function DevicesPage() {
     } catch (err) {
       setQrInitializingMap((prev) => ({ ...prev, [deviceId]: false }));
       console.error("[DEBUG] fetchDeviceStatusThunk failed:", err);
+    }
+  };
+
+  const handleRemoveDevice = async (deviceId: number) => {
+    if (!window.confirm("Are you sure you want to remove this device?")) return;
+    try {
+      await dispatch(removeDeviceThunk({ deviceId })).unwrap();
+      dispatch(fetchDevicesThunk());
+    } catch (err) {
+      alert("Failed to remove device");
     }
   };
 
@@ -213,6 +218,13 @@ export default function DevicesPage() {
           </button>
           <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
             <Settings className="w-4 h-4" />
+          </button>
+          <button
+            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+            title="Remove Device"
+            onClick={() => handleRemoveDevice(device.id)}
+          >
+            <XCircle className="w-4 h-4" />
           </button>
         </div>
       </div>

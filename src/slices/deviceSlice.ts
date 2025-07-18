@@ -34,10 +34,11 @@ const initialState: DeviceState = {
   deviceStatusMap: {},
 };
 
-export function createDeviceSlice({ fetchDevicesThunk, addDeviceThunk, fetchDeviceStatusThunk }: {
+export function createDeviceSlice({ fetchDevicesThunk, addDeviceThunk, fetchDeviceStatusThunk, removeDeviceThunk }: {
   fetchDevicesThunk: AsyncThunk<Device[], void, { state: unknown; rejectValue: string }>;
   addDeviceThunk: AsyncThunk<Device, { name: string; waNumber: string }, { state: unknown; rejectValue: string }>;
   fetchDeviceStatusThunk: AsyncThunk<DeviceStatus, { deviceId: number }, { state: unknown; rejectValue: string }>;
+  removeDeviceThunk: AsyncThunk<number, { deviceId: number }, { state: unknown; rejectValue: string }>;
 }) {
   return createSlice({
     name: 'devices',
@@ -82,6 +83,9 @@ export function createDeviceSlice({ fetchDevicesThunk, addDeviceThunk, fetchDevi
         .addCase(fetchDeviceStatusThunk.fulfilled, (state, action: PayloadAction<{ deviceId: number; status?: string; qr?: string; qrDataUrl?: string }>) => {
           const { deviceId, status, qr, qrDataUrl } = action.payload;
           state.deviceStatusMap[deviceId] = { deviceId, status, qr, qrDataUrl };
+        })
+        .addCase(removeDeviceThunk.fulfilled, (state, action: PayloadAction<number>) => {
+          state.devices = state.devices.filter(device => device.id !== action.payload);
         });
     },
   });
