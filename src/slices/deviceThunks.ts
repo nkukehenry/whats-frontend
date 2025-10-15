@@ -33,18 +33,8 @@ export const addDeviceThunk = createAsyncThunk<
         token,
       });
       const deviceId = addResult.data.id;
-      // Optionally fetch QR and status
-      const statusResult = await apiFetch<{
-        success: boolean;
-        data: {
-          qr?: string;
-          qrDataUrl?: string;
-          status?: string;
-        };
-      }>(`/devices/status/${deviceId}`, {
-        method: 'GET',
-        token,
-      });
+      
+      // Fetch QR and status with retry logic
       const device: Device = {
         id: addResult.data.id,
         name: addResult.data.name,
@@ -52,9 +42,49 @@ export const addDeviceThunk = createAsyncThunk<
         isActive: addResult.data.isActive,
         createdAt: addResult.data.createdAt,
       };
-      if (statusResult.data.qr) device.qr = statusResult.data.qr;
-      if (statusResult.data.qrDataUrl) device.qrDataUrl = statusResult.data.qrDataUrl;
-      if (statusResult.data.status) device.status = statusResult.data.status;
+      
+      // Try to fetch status with retry logic
+      const maxRetries = 3;
+      let statusResult: {
+        success: boolean;
+        data: {
+          qr?: string;
+          qrDataUrl?: string;
+          status?: string;
+        };
+      } | null = null;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          statusResult = await apiFetch<{
+            success: boolean;
+            data: {
+              qr?: string;
+              qrDataUrl?: string;
+              status?: string;
+            };
+          }>(`/devices/status/${deviceId}`, {
+            method: 'GET',
+            token,
+          });
+          break; // Success, exit retry loop
+        } catch (err: unknown) {
+          console.warn(`Initial status fetch attempt ${attempt}/${maxRetries} failed:`, err);
+          
+          // If this is not the last attempt, wait before retrying
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+          }
+        }
+      }
+      
+      // Add status data if we got it (even if some attempts failed)
+      if (statusResult?.data) {
+        if (statusResult.data.qr) device.qr = statusResult.data.qr;
+        if (statusResult.data.qrDataUrl) device.qrDataUrl = statusResult.data.qrDataUrl;
+        if (statusResult.data.status) device.status = statusResult.data.status;
+      }
+      
       return device;
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'message' in err) {
@@ -112,28 +142,44 @@ export const fetchDeviceStatusThunk = createAsyncThunk<
     const state = getState() as RootState;
     const token = state.auth.token;
     if (!token) return rejectWithValue('Not authenticated');
-    try {
-      const result = await apiFetch<{
-        success: boolean;
-        data: {
-          qr?: string;
-          qrDataUrl?: string;
-          status?: string;
+    
+    // Retry logic for status fetching
+    const maxRetries = 3;
+    let lastError: unknown;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await apiFetch<{
+          success: boolean;
+          data: {
+            qr?: string;
+            qrDataUrl?: string;
+            status?: string;
+          };
+        }>(`/devices/status/${deviceId}`, {
+          method: 'GET',
+          token,
+        });
+        return {
+          deviceId,
+          ...result.data,
         };
-      }>(`/devices/status/${deviceId}`, {
-        method: 'GET',
-        token,
-      });
-      return {
-        deviceId,
-        ...result.data,
-      };
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'message' in err) {
-        return rejectWithValue((err as { message?: string }).message || 'Unknown error');
+      } catch (err: unknown) {
+        lastError = err;
+        console.warn(`Status fetch attempt ${attempt}/${maxRetries} failed:`, err);
+        
+        // If this is not the last attempt, wait before retrying
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+        }
       }
-      return rejectWithValue('Unknown error');
     }
+    
+    // All retries failed
+    if (lastError && typeof lastError === 'object' && 'message' in lastError) {
+      return rejectWithValue((lastError as { message?: string }).message || 'Failed to fetch device status after retries');
+    }
+    return rejectWithValue('Failed to fetch device status after retries');
   }
 );
 

@@ -42,20 +42,40 @@ export default function AddDevicePage() {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<"form" | "qr" | "success">("form");
   const [copied, setCopied] = useState(false);
+  const [connectionIssues, setConnectionIssues] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   // Redux device status
   const deviceStatus = useAppSelector((state) =>
     result?.deviceId ? selectDeviceStatus(state, result.deviceId) : undefined
   );
 
-  // Poll device status using thunk
+  // Poll device status using thunk with retry logic
   useEffect(() => {
     if (result?.deviceId) {
-      const pollStatus = () => {
-        dispatch(fetchDeviceStatusThunk({ deviceId: result.deviceId }));
+      let retryCount = 0;
+      const maxRetries = 5;
+      
+      const pollStatus = async () => {
+        try {
+          await dispatch(fetchDeviceStatusThunk({ deviceId: result.deviceId })).unwrap();
+          retryCount = 0; // Reset retry count on success
+          setConnectionIssues(false); // Clear connection issues on success
+        } catch (err) {
+          retryCount++;
+          console.warn(`Status poll attempt ${retryCount} failed:`, err);
+          
+          // If we've exceeded max retries, show connection issues but keep trying
+          if (retryCount >= maxRetries) {
+            console.error('Status polling failed multiple times, but continuing to retry...');
+            setConnectionIssues(true);
+            retryCount = 0; // Reset to keep trying
+          }
+        }
       };
+      
       const interval = setInterval(pollStatus, 5000);
-      pollStatus();
+      pollStatus(); // Initial poll
       return () => clearInterval(interval);
     }
   }, [result?.deviceId, dispatch]);
@@ -65,10 +85,20 @@ export default function AddDevicePage() {
     router.push("/devices");
   }, [dispatch, router]);
 
-  // Retry logic
-  const handleRetryQr = () => {
-    if (result?.deviceId) {
-      dispatch(fetchDeviceStatusThunk({ deviceId: result.deviceId }));
+  // Retry logic with better error handling
+  const handleRetryQr = async () => {
+    if (result?.deviceId && !retrying) {
+      setRetrying(true);
+      try {
+        await dispatch(fetchDeviceStatusThunk({ deviceId: result.deviceId })).unwrap();
+        console.log('QR refresh successful');
+        setConnectionIssues(false); // Clear connection issues on successful retry
+      } catch (err) {
+        console.error('QR refresh failed:', err);
+        // The thunk already has retry logic, so we just log the final error
+      } finally {
+        setRetrying(false);
+      }
     }
   };
 
@@ -285,9 +315,15 @@ export default function AddDevicePage() {
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Scan QR Code</h2>
                   <p className="text-gray-600">Open WhatsApp on your phone and scan this code</p>
                   
-                  {/* WebSocket Connection Status */}
+                  {/* Connection Status */}
                   <div className="mt-4 flex items-center justify-center gap-2">
                     <DeviceStatusIndicator deviceId={result.deviceId} />
+                    {connectionIssues && (
+                      <div className="flex items-center gap-2 text-orange-600 text-sm">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>Connection issues - retrying...</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* QR Timer */}
@@ -325,11 +361,13 @@ export default function AddDevicePage() {
                   {/* Retry/Refresh Button - always visible when QR is shown */}
                   <button
                     onClick={handleRetryQr}
+                    disabled={retrying}
                     className={`px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2
-                      ${false ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                      ${connectionIssues ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} 
+                      disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <RefreshCw className="w-4 h-4" />
-                    Refresh QR
+                    <RefreshCw className={`w-4 h-4 ${retrying ? 'animate-spin' : ''}`} />
+                    {retrying ? 'Refreshing...' : 'Refresh QR'}
                   </button>
 
                   {/* Device Info */}

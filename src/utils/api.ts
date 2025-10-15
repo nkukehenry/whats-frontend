@@ -57,7 +57,7 @@ export async function apiFetch<T>(
     }
   }
 
-  const { token: _token, ...fetchOptions } = options || {};
+  const { token: _unusedToken, ...fetchOptions } = options || {};
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -96,7 +96,7 @@ export async function apiFetch<T>(
           localStorage.removeItem('refreshToken');
           throw new Error('Session expired. Please log in again.');
         }
-      } catch (refreshErr) {
+      } catch (_refreshErr) {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         throw new Error('Session expired. Please log in again.');

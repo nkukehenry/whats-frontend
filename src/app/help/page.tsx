@@ -38,7 +38,7 @@ export default function HelpPage() {
               <ol className="list-decimal pl-6 text-gray-700 space-y-1">
                 <li>Go to <span className="font-mono">Single Send</span> from the sidebar.</li>
                 <li>Select the device you want to send from.</li>
-                <li>Enter the recipient's WhatsApp number (with country code) and your message.</li>
+                <li>Enter the recipient&apos;s WhatsApp number (with country code) and your message.</li>
                 <li>Click <span className="font-mono">Send</span>.</li>
                 <li>You will see a confirmation when the message is sent successfully.</li>
               </ol>

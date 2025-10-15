@@ -16,6 +16,8 @@ import {
   HelpCircle,
   LogOut,
   Home,
+  Bot,
+  Users,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -44,7 +46,8 @@ export default function Sidebar({
     { id: "subscription", label: "Subscription", icon: Settings, path: "/subscriptions" },
     { id: "dashboard", label: "Dashboard", icon: BarChart3, path: "/dashboard" },
     { id: "devices", label: "My Devices", icon: Smartphone, path: "/devices" },
-    //{ id: "templates", label: "Templates", icon: FileText, path: "/templates" },
+    { id: "bot", label: "Bot Responses", icon: Bot, path: "/bot" },
+    { id: "groups", label: "Group Chats", icon: Users, path: "/groups" },
     { id: "send", label: "Single Send", icon: Send, path: "/messages" },
     { id: "bulk", label: "Bulk Message", icon: Rocket, path: "/messages/bulk" },
    // { id: "scheduled", label: "Scheduled", icon: Calendar, path: "/scheduled" },

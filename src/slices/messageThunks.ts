@@ -1,8 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import { apiFetch } from '../utils/api';
 import type { RootState } from '../store';
 import { setLoading, setError, setMessages, setStats, setSending, setSendError, addMessage } from './messageSlice';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsapi.mutindo.com/api/v1';
 
 // Send a single message
 export const sendMessageThunk = createAsyncThunk(
@@ -22,21 +21,22 @@ export const sendMessageThunk = createAsyncThunk(
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/messages/send`, {
+      const result = await apiFetch<{
+        success: boolean;
+        data: {
+          id: number;
+          to: string;
+          message: string;
+          status: 'PENDING' | 'SENT' | 'FAILED';
+          sentAt: string;
+          deviceId: number;
+        };
+        message: string;
+      }>('/messages/send', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify({ to, message, deviceId }),
+        token,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send message');
-      }
-
-      const result = await response.json();
       
       // Add the message to the list (you might want to fetch the actual message from the server)
       const newMessage = {
@@ -50,7 +50,7 @@ export const sendMessageThunk = createAsyncThunk(
       
       dispatch(addMessage(newMessage));
       
-      return result;
+      return result.data || result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
       dispatch(setSendError(errorMessage));
@@ -79,40 +79,55 @@ export const sendBulkMessageThunk = createAsyncThunk(
         throw new Error('No authentication token found');
       }
 
-      let response;
+      let result;
       if (file) {
         // Send as multipart/form-data
         const formData = new FormData();
         formData.append('file', file);
         formData.append('message', message);
-        if (deviceId) formData.append('deviceId', deviceId.toString());
-        response = await fetch(`${API_BASE_URL}/messages/send-bulk`, {
+        if (deviceId)         formData.append('deviceId', deviceId.toString());
+        
+        result = await apiFetch<{
+          success: boolean;
+          data: {
+            sent: number;
+            failed: number;
+            total: number;
+            results: Array<{
+              to: string;
+              status: 'PENDING' | 'SENT' | 'FAILED';
+              message?: string;
+            }>;
+          };
+          message: string;
+        }>('/messages/send-bulk', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
           body: formData,
+          token,
         });
       } else {
         // Send as JSON
-        response = await fetch(`${API_BASE_URL}/messages/send-bulk`, {
+        result = await apiFetch<{
+          success: boolean;
+          data: {
+            sent: number;
+            failed: number;
+            total: number;
+            results: Array<{
+              to: string;
+              status: 'PENDING' | 'SENT' | 'FAILED';
+              message?: string;
+            }>;
+          };
+          message: string;
+        }>('/messages/send-bulk', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
           body: JSON.stringify({ recipients, message, deviceId }),
+          token,
         });
       }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send bulk messages');
-      }
-
-      const result = await response.json();
       // Optionally dispatch addMessage for each recipient if needed
-      return result;
+      return result.data || result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send bulk messages';
       dispatch(setSendError(errorMessage));
@@ -138,21 +153,24 @@ export const fetchMessagesThunk = createAsyncThunk(
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const messages = await apiFetch<{
+        success: boolean;
+        data: Array<{
+          id: number;
+          to: string;
+          body: string;
+          sentAt: string;
+          status: 'PENDING' | 'SENT' | 'FAILED';
+          deviceId: number;
+        }>;
+        message: string;
+      }>('/messages', {
+        method: 'GET',
+        token,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch messages');
-      }
-
-      const messages = await response.json();
-      dispatch(setMessages(messages));
+      dispatch(setMessages(messages.data || messages));
       
-      return messages;
+      return messages.data || messages;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch messages';
       dispatch(setError(errorMessage));
@@ -175,21 +193,22 @@ export const fetchMessageStatsThunk = createAsyncThunk(
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/messages/stats`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const stats = await apiFetch<{
+        success: boolean;
+        data: {
+          totalMessages: number;
+          messagesThisMonth: number;
+          planLimit: number;
+          remainingMessages: number;
+        };
+        message: string;
+      }>('/messages/stats', {
+        method: 'GET',
+        token,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch message statistics');
-      }
-
-      const stats = await response.json();
-      dispatch(setStats(stats));
+      dispatch(setStats(stats.data || stats));
       
-      return stats;
+      return stats.data || stats;
     } catch (error) {
       console.error('Failed to fetch message stats:', error);
       // Don't throw error for stats as it's not critical
