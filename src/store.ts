@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import messageReducer from './slices/messageSlice';
 import botReducer from './slices/botSlice';
 import groupReducer from './slices/groupSlice';
+import apiBotReducer from './slices/apiBotSlice';
 import { createDeviceSlice } from './slices/deviceSlice';
 import { fetchDevicesThunk, addDeviceThunk, fetchDeviceStatusThunk, removeDeviceThunk } from './slices/deviceThunks';
 
@@ -15,6 +16,7 @@ export const store = configureStore({
     messages: messageReducer,
     bot: botReducer,
     groups: groupReducer,
+    apiBot: apiBotReducer,
   },
 });
 

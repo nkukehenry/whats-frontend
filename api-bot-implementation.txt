@@ -1,0 +1,323 @@
+# API Bot Frontend Implementation Guide
+
+This comprehensive guide provides everything needed to implement API bot management in your frontend application, including detailed request/response samples, authentication methods, and configuration examples.
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Authentication]-remains the sae
+3. [API Bot Configuration](#api-bot-configuration)
+4. [Request/Response Examples](#requestresponse-examples)
+
+
+## Overview
+
+The API Bot system allows users to configure bots that trigger on specific text and call external APIs with various authentication methods. Each bot can be configured with:
+
+- **Trigger text** - What text activates the bot
+- **API endpoint** - External API to call
+- **Authentication** - Basic auth, Bearer tokens, or custom headers
+- **Request configuration** - Headers, body templates, custom parameters
+- **Response handling** - Text and media responses
+
+
+
+## API Bot Configuration
+
+### 1. Create API Bot Configuration
+
+**Endpoint:** `POST /api/v1/api-bot/configs`
+
+**Request Body:**
+```json
+{
+  "deviceId": 49,
+  "name": "Weather Bot",
+  "triggerText": "weather",
+  "apiEndpoint": "https://api.openweathermap.org/data/2.5/weather",
+  "httpMethod": "GET",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "customParams": {
+    "q": "{{message}}",
+    "appid": "your_api_key_here",
+    "units": "metric",
+    "lang": "en"
+  },
+  "includeSender": false,
+  "timeout": 5000
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "userId": 1,
+    "deviceId": 49,
+    "name": "Weather Bot",
+    "triggerText": "weather",
+    "apiEndpoint": "https://api.openweathermap.org/data/2.5/weather",
+    "httpMethod": "GET",
+    "headers": {
+      "Accept": "application/json"
+    },
+    "customParams": {
+      "q": "{{message}}",
+      "appid": "your_api_key_here",
+      "units": "metric",
+      "lang": "en"
+    },
+    "includeSender": false,
+    "timeout": 5000,
+    "isActive": true,
+    "createdAt": "2024-01-15T10:30:00Z",
+    "updatedAt": "2024-01-15T10:30:00Z"
+  },
+  "message": "API bot configuration created successfully"
+}
+```
+
+### 2. Get API Bot Configurations
+
+**Endpoint:** `GET /api/v1/api-bot/configs?deviceId=49`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Weather Bot",
+      "triggerText": "weather",
+      "apiEndpoint": "https://api.openweathermap.org/data/2.5/weather",
+      "httpMethod": "GET",
+      "isActive": true,
+      "createdAt": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": 2,
+      "name": "ChatGPT Bot",
+      "triggerText": "ai",
+      "apiEndpoint": "https://api.openai.com/v1/chat/completions",
+      "httpMethod": "POST",
+      "isActive": true,
+      "createdAt": "2024-01-15T11:00:00Z"
+    }
+  ]
+}
+```
+
+### 3. Update API Bot Configuration
+
+**Endpoint:** `PUT /api/v1/api-bot/configs/1`
+
+**Request Body:**
+```json
+{
+  "name": "Updated Weather Bot",
+  "triggerText": "weather update",
+  "isActive": true,
+  "timeout": 10000
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Updated Weather Bot",
+    "triggerText": "weather update",
+    "isActive": true,
+    "timeout": 10000,
+    "updatedAt": "2024-01-15T12:00:00Z"
+  },
+  "message": "API bot configuration updated successfully"
+}
+```
+
+### 4. Test API Bot Configuration
+
+**Endpoint:** `POST /api/v1/api-bot/configs/1/test`
+
+**Request Body:**
+```json
+{
+  "testMessage": "weather in London"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "response": {
+      "reply": "It's 15°C and cloudy in London",
+      "media": "https://weather-image.jpg"
+    }
+  }
+}
+```
+
+### 5. Delete API Bot Configuration
+
+**Endpoint:** `DELETE /api/v1/api-bot/configs/1`
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "API bot configuration deleted successfully"
+}
+```
+
+## Request/Response Examples
+
+### Example 1: Simple Weather Bot (GET Request)
+
+**Configuration:**
+```json
+{
+  "name": "Weather Bot",
+  "triggerText": "weather",
+  "apiEndpoint": "https://api.openweathermap.org/data/2.5/weather",
+  "httpMethod": "GET",
+  "customParams": {
+    "q": "{{message}}",
+    "appid": "your_api_key",
+    "units": "metric"
+  },
+  "includeSender": false
+}
+```
+
+**User Input:** "weather London"
+**API Call:** `GET https://api.openweathermap.org/data/2.5/weather?q=London&appid=your_api_key&units=metric`
+**Bot Response:** "It's 15°C and cloudy in London"
+
+### Example 2: ChatGPT Bot with Bearer Token
+
+**Configuration:**
+```json
+{
+  "name": "ChatGPT Bot",
+  "triggerText": "ai",
+  "apiEndpoint": "https://api.openai.com/v1/chat/completions",
+  "httpMethod": "POST",
+  "headers": {
+    "Authorization": "Bearer sk-your-openai-key",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "model": "gpt-3.5-turbo",
+    "messages": [
+      {
+        "role": "user",
+        "content": "{{message}}"
+      }
+    ],
+    "max_tokens": 150
+  },
+  "includeSender": false
+}
+```
+
+**User Input:** "ai What is machine learning?"
+**API Call:** `POST https://api.openai.com/v1/chat/completions`
+**Headers:** `Authorization: Bearer sk-your-openai-key`
+**Body:** `{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "What is machine learning?"}], "max_tokens": 150}`
+**Bot Response:** "Machine learning is a subset of artificial intelligence..."
+
+### Example 3: CRM Bot with Basic Auth and Sender Context
+
+**Configuration:**
+```json
+{
+  "name": "CRM Bot",
+  "triggerText": "support",
+  "apiEndpoint": "https://your-crm.com/api/tickets",
+  "httpMethod": "POST",
+  "basicAuth": {
+    "username": "api_user",
+    "password": "secure_password"
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "X-API-Version": "v1"
+  },
+  "requestBody": {
+    "customer_query": "{{message}}",
+    "sender_phone": "{{sender}}",
+    "timestamp": "{{timestamp}}"
+  },
+  "customParams": {
+    "priority": "medium",
+    "category": "whatsapp_support"
+  },
+  "includeSender": true
+}
+
+
+
+```
+Examples
+Headers and custom request aparams are configured one by one (key=>value)
+### Example 4: Payment Bot with Custom Headers
+
+**Configuration:**
+```json
+{
+  "name": "Payment Bot",
+  "triggerText": "payment",
+  "apiEndpoint": "https://your-payment-api.com/status",
+  "httpMethod": "POST",
+  "headers": {
+    "Authorization": "Bearer your_payment_api_key",
+    "Content-Type": "application/json",
+    "X-API-Version": "v2"
+  },
+  "requestBody": {
+    "phone": "{{sender}}",
+    "query": "{{message}}",
+    "timestamp": "{{timestamp}}"
+  },
+  "customParams": {
+    "source": "whatsapp_bot",
+    "version": "1.0"
+  },
+  "includeSender": true
+}
+```
+
+
+## Template Placeholders
+
+The following placeholders can be used in request bodies and custom parameters:
+
+- **`{{message}}`** - The user's input text
+- **`{{sender}}`** - The sender's phone number (only if `includeSender: true`)
+- **`{{timestamp}}`** - Current timestamp in ISO format
+- **`{{deviceId}}`** - The device ID
+
+### Example Usage
+
+```json
+{
+  "requestBody": {
+    "query": "{{message}}",
+    "user_id": "{{sender}}",
+    "timestamp": "{{timestamp}}",
+    "device_id": "{{deviceId}}"
+  }
+}
+```
+
+
+

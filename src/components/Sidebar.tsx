@@ -18,6 +18,7 @@ import {
   Home,
   Bot,
   Users,
+  Code,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -47,6 +48,7 @@ export default function Sidebar({
     { id: "dashboard", label: "Dashboard", icon: BarChart3, path: "/dashboard" },
     { id: "devices", label: "My Devices", icon: Smartphone, path: "/devices" },
     { id: "bot", label: "Bot Responses", icon: Bot, path: "/bot" },
+    { id: "api-bot", label: "API Bots", icon: Code, path: "/api-bot" },
     { id: "groups", label: "Group Chats", icon: Users, path: "/groups" },
     { id: "send", label: "Single Send", icon: Send, path: "/messages" },
     { id: "bulk", label: "Bulk Message", icon: Rocket, path: "/messages/bulk" },
