@@ -48,7 +48,7 @@ export default function Sidebar({
     { id: "dashboard", label: "Dashboard", icon: BarChart3, path: "/dashboard" },
     { id: "subscription", label: "Subscription", icon: Settings, path: "/subscriptions" },
     { id: "devices", label: "My Devices", icon: Smartphone, path: "/devices" },
-    { id: "bot", label: "Basic Responses", icon: Bot, path: "/bot" },
+    { id: "bot", label: "Basic Bots", icon: Bot, path: "/bot" },
     { id: "api-bot", label: "API Bots", icon: Code, path: "/api-bot" },
     { id: "groups", label: "Group Chats", icon: Users, path: "/groups" },
     { id: "send", label: "Single Send", icon: Send, path: "/messages" },
