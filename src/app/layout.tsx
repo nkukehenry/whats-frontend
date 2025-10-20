@@ -6,8 +6,8 @@ import { ReactNode } from 'react';
 import Providers from './providers';
 
 export const metadata: Metadata = {
-  title: 'Geni WhatsApp Proxy',
-  description: 'We enable your business to send and receive WhatsApp messages',
+  title: 'Bulkoms',
+  description: 'The Bulk Online Messaging System | WhatsApp Automation',
   viewport: 'width=device-width, initial-scale=1',
 };
 

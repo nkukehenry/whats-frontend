@@ -144,9 +144,13 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mr-3 border border-white/10">
               <MessageCircle className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold">Geni WhatsApp</span>
+            <div className="flex flex-col">
+            <span className="text-xl font-bold">Bulkoms</span>
+            <span className="text-sm font-bold mt-0">Your WhatsApp Automation Partner</span>
+            </div>
           </div>
-
+          
+          
           {/* Main Content */}
           <div className="space-y-6">
             <div className="space-y-4">

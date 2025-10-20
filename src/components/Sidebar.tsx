@@ -19,6 +19,7 @@ import {
   Bot,
   Users,
   Code,
+  MessageCircle,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -44,10 +45,10 @@ export default function Sidebar({
   };
 
   const navigationItems = [
-    { id: "subscription", label: "Subscription", icon: Settings, path: "/subscriptions" },
     { id: "dashboard", label: "Dashboard", icon: BarChart3, path: "/dashboard" },
+    { id: "subscription", label: "Subscription", icon: Settings, path: "/subscriptions" },
     { id: "devices", label: "My Devices", icon: Smartphone, path: "/devices" },
-    { id: "bot", label: "Bot Responses", icon: Bot, path: "/bot" },
+    { id: "bot", label: "Basic Responses", icon: Bot, path: "/bot" },
     { id: "api-bot", label: "API Bots", icon: Code, path: "/api-bot" },
     { id: "groups", label: "Group Chats", icon: Users, path: "/groups" },
     { id: "send", label: "Single Send", icon: Send, path: "/messages" },
@@ -81,9 +82,9 @@ export default function Sidebar({
         {/* Logo */}
         <div className="flex items-center mb-8">
           <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mr-3 shadow-sm">
-            G
+            <MessageCircle className="w-6 h-6 text-white" />
           </div>
-          <span className="font-bold text-gray-900 text-lg">Geni WhatsApp</span>
+          <span className="font-bold text-gray-900 text-lg">Bulkoms</span>
         </div>
 
         {/* Back Button (if needed) */}
