@@ -122,4 +122,16 @@ export async function subscribeToPlan(planId: number) {
     method: "POST",
     body: JSON.stringify({ planId }),
   });
+}
+
+export async function fetchCurrentSubscription() {
+  console.log('fetchCurrentSubscription called');
+  try {
+    const result = await apiFetch<{ success: boolean; data: unknown }>("/subscriptions/current");
+    console.log('fetchCurrentSubscription result:', result);
+    return result;
+  } catch (error) {
+    console.error('fetchCurrentSubscription error:', error);
+    throw error;
+  }
 } 

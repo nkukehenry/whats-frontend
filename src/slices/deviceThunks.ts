@@ -57,16 +57,16 @@ export const addDeviceThunk = createAsyncThunk<
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           statusResult = await apiFetch<{
-            success: boolean;
-            data: {
-              qr?: string;
-              qrDataUrl?: string;
-              status?: string;
-            };
-          }>(`/devices/status/${deviceId}`, {
-            method: 'GET',
-            token,
-          });
+        success: boolean;
+        data: {
+          qr?: string;
+          qrDataUrl?: string;
+          status?: string;
+        };
+      }>(`/devices/status/${deviceId}`, {
+        method: 'GET',
+        token,
+      });
           break; // Success, exit retry loop
         } catch (err: unknown) {
           console.warn(`Initial status fetch attempt ${attempt}/${maxRetries} failed:`, err);
@@ -80,9 +80,9 @@ export const addDeviceThunk = createAsyncThunk<
       
       // Add status data if we got it (even if some attempts failed)
       if (statusResult?.data) {
-        if (statusResult.data.qr) device.qr = statusResult.data.qr;
-        if (statusResult.data.qrDataUrl) device.qrDataUrl = statusResult.data.qrDataUrl;
-        if (statusResult.data.status) device.status = statusResult.data.status;
+      if (statusResult.data.qr) device.qr = statusResult.data.qr;
+      if (statusResult.data.qrDataUrl) device.qrDataUrl = statusResult.data.qrDataUrl;
+      if (statusResult.data.status) device.status = statusResult.data.status;
       }
       
       return device;
@@ -148,23 +148,23 @@ export const fetchDeviceStatusThunk = createAsyncThunk<
     let lastError: unknown;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const result = await apiFetch<{
-          success: boolean;
-          data: {
-            qr?: string;
-            qrDataUrl?: string;
-            status?: string;
-          };
-        }>(`/devices/status/${deviceId}`, {
-          method: 'GET',
-          token,
-        });
-        return {
-          deviceId,
-          ...result.data,
+    try {
+      const result = await apiFetch<{
+        success: boolean;
+        data: {
+          qr?: string;
+          qrDataUrl?: string;
+          status?: string;
         };
-      } catch (err: unknown) {
+      }>(`/devices/status/${deviceId}`, {
+        method: 'GET',
+        token,
+      });
+      return {
+        deviceId,
+        ...result.data,
+      };
+    } catch (err: unknown) {
         lastError = err;
         console.warn(`Status fetch attempt ${attempt}/${maxRetries} failed:`, err);
         

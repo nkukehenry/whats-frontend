@@ -4,6 +4,7 @@ import messageReducer from './slices/messageSlice';
 import botReducer from './slices/botSlice';
 import groupReducer from './slices/groupSlice';
 import apiBotReducer from './slices/apiBotSlice';
+import paymentReducer from './slices/paymentSlice';
 import { createDeviceSlice } from './slices/deviceSlice';
 import { fetchDevicesThunk, addDeviceThunk, fetchDeviceStatusThunk, removeDeviceThunk } from './slices/deviceThunks';
 
@@ -17,6 +18,7 @@ export const store = configureStore({
     bot: botReducer,
     groups: groupReducer,
     apiBot: apiBotReducer,
+    payment: paymentReducer,
   },
 });
 

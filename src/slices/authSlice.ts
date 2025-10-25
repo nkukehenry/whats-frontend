@@ -19,7 +19,14 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   hydrated: false,
-  subscription: undefined, // NEW
+  subscription: typeof window !== 'undefined' ? (() => {
+    try {
+      const stored = localStorage.getItem('subscription');
+      return stored ? JSON.parse(stored) : undefined;
+    } catch {
+      return undefined;
+    }
+  })() : undefined,
 };
 
 const authSlice = createSlice({
@@ -32,6 +39,7 @@ const authSlice = createSlice({
       state.requiresOTP = false;
     },
     loginSuccess(state, action: PayloadAction<{ email: string; token: string; refreshToken?: string; subscription?: unknown }>) {
+      console.log('loginSuccess reducer called with subscription:', action.payload.subscription);
       state.user = { email: action.payload.email };
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken || null;
@@ -45,6 +53,13 @@ const authSlice = createSlice({
           localStorage.setItem('refreshToken', action.payload.refreshToken);
         } else {
           localStorage.removeItem('refreshToken');
+        }
+        if (action.payload.subscription) {
+          console.log('Saving subscription to localStorage:', action.payload.subscription);
+          localStorage.setItem('subscription', JSON.stringify(action.payload.subscription));
+        } else {
+          console.log('No subscription to save, removing from localStorage');
+          localStorage.removeItem('subscription');
         }
       }
     },
@@ -65,9 +80,11 @@ const authSlice = createSlice({
       state.loading = true;
       state.error = null;
     },
-    otpSuccess(state, action: PayloadAction<{ token: string; refreshToken?: string }>) {
+    otpSuccess(state, action: PayloadAction<{ token: string; refreshToken?: string; subscription?: unknown }>) {
+      console.log('otpSuccess reducer called with subscription:', action.payload.subscription);
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken || null;
+      state.subscription = action.payload.subscription;
       state.loading = false;
       state.error = null;
       state.requiresOTP = false;
@@ -77,6 +94,13 @@ const authSlice = createSlice({
           localStorage.setItem('refreshToken', action.payload.refreshToken);
         } else {
           localStorage.removeItem('refreshToken');
+        }
+        if (action.payload.subscription) {
+          console.log('Saving subscription to localStorage:', action.payload.subscription);
+          localStorage.setItem('subscription', JSON.stringify(action.payload.subscription));
+        } else {
+          console.log('No subscription to save, removing from localStorage');
+          localStorage.removeItem('subscription');
         }
       }
     },
@@ -88,12 +112,14 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.refreshToken = null;
+      state.subscription = undefined;
       state.loading = false;
       state.error = null;
       state.requiresOTP = false;
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('subscription');
       }
     },
     setToken(state, action: PayloadAction<string>) {
@@ -111,6 +137,13 @@ const authSlice = createSlice({
     },
     setSubscription(state, action: PayloadAction<unknown>) {
       state.subscription = action.payload;
+      if (typeof window !== 'undefined') {
+        if (action.payload) {
+          localStorage.setItem('subscription', JSON.stringify(action.payload));
+        } else {
+          localStorage.removeItem('subscription');
+        }
+      }
     },
   },
 });

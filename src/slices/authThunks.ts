@@ -32,6 +32,7 @@ export const loginThunk = createAsyncThunk(
       if (data.requiresOTP) {
         dispatch(otpRequired({ email }));
       } else if (data.token) {
+        console.log('Login success - subscription from API:', data.subscription);
         dispatch(loginSuccess({ email, token: data.token, refreshToken: data.refreshToken, subscription: data.subscription }));
       } else {
         dispatch(loginFailure('Unknown login response'));
@@ -59,11 +60,13 @@ export const verifyOtpThunk = createAsyncThunk(
         success: boolean;
         token: string;
         refreshToken?: string;
+        subscription?: unknown;
       }>('/auth/verify-otp', {
         method: 'POST',
         body: JSON.stringify({ email, otp }),
       });
-      dispatch(otpSuccess({ token: data.token, refreshToken: data.refreshToken }));
+      console.log('OTP verification success - subscription from API:', data.subscription);
+      dispatch(otpSuccess({ token: data.token, refreshToken: data.refreshToken, subscription: data.subscription }));
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'message' in err) {
         dispatch(otpFailure((err as { message?: string }).message || 'Unknown error'));

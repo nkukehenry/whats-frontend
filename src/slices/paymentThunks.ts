@@ -1,0 +1,102 @@
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { apiFetch } from '../utils/api';
+import type { RootState } from '../store';
+import type { 
+  PaymentPlan,
+  InitiatePaymentRequest,
+  InitiatePaymentResponse,
+  PaymentStatusResponse,
+  PaymentStatus,
+} from '../types/payment';
+
+// Fetch Payment Plans
+export const fetchPaymentPlansThunk = createAsyncThunk<
+  PaymentPlan[],
+  void,
+  { state: RootState; rejectValue: string }
+>(
+  'payment/fetchPlans',
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState();
+    const token = state.auth.token;
+    if (!token) return rejectWithValue('Not authenticated');
+
+    try {
+      const result = await apiFetch<{
+        success: boolean;
+        data: PaymentPlan[];
+      }>('/payments/plans', {
+        method: 'GET',
+        token,
+      });
+      return result.data;
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        return rejectWithValue((err as { message?: string }).message || 'Unknown error');
+      }
+      return rejectWithValue('Unknown error');
+    }
+  }
+);
+
+// Initiate Payment
+export const initiatePaymentThunk = createAsyncThunk<
+  InitiatePaymentResponse['data'],
+  InitiatePaymentRequest,
+  { state: RootState; rejectValue: string }
+>(
+  'payment/initiatePayment',
+  async (payload, { getState, rejectWithValue }) => {
+    const state = getState();
+    const token = state.auth.token;
+    if (!token) return rejectWithValue('Not authenticated');
+
+    try {
+      const result = await apiFetch<InitiatePaymentResponse>('/payments/initiate', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        token,
+      });
+
+      if (!result.success) {
+        return rejectWithValue(result.message || 'Payment initiation failed');
+      }
+
+      return result.data;
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        return rejectWithValue((err as { message?: string }).message || 'Unknown error');
+      }
+      return rejectWithValue('Unknown error');
+    }
+  }
+);
+
+// Check Payment Status
+export const checkPaymentStatusThunk = createAsyncThunk<
+  PaymentStatus,
+  { paymentId: number },
+  { state: RootState; rejectValue: string }
+>(
+  'payment/checkPaymentStatus',
+  async ({ paymentId }, { getState, rejectWithValue }) => {
+    const state = getState();
+    const token = state.auth.token;
+    if (!token) return rejectWithValue('Not authenticated');
+
+    try {
+      const result = await apiFetch<PaymentStatusResponse>(`/payments/${paymentId}/status`, {
+        method: 'GET',
+        token,
+      });
+      return result.data;
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        return rejectWithValue((err as { message?: string }).message || 'Unknown error');
+      }
+      return rejectWithValue('Unknown error');
+    }
+  }
+);
+
+
