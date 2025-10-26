@@ -368,7 +368,7 @@ export default function PlansPage() {
                     <span className="text-blue-600">Free</span>
                   ) : (
                     <>
-                      ${(plan.priceCents).toFixed(2)}
+                      UGX {(plan.priceCents).toLocaleString()}
                   <span className="text-base font-medium text-gray-500 ml-1">/ {plan.period}</span>
                     </>
                   )}
