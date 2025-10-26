@@ -154,7 +154,7 @@ export default function SubscriptionPage() {
             
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Price:</span>
-              <span className="font-semibold">UGX {plan?.priceCents?.toFixed(2) || '0.00'}/month</span>
+              <span className="font-semibold">UGX {plan?.priceCents?.toLocaleString() || '0.00'}/month</span>
             </div>
             
             <div className="flex items-center justify-between">
