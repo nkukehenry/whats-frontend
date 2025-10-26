@@ -6,6 +6,8 @@ interface MobileInputModalProps {
   isOpen: boolean;
   mobile: string;
   onMobileChange: (mobile: string) => void;
+  monthsCount: number;
+  onMonthsCountChange: (monthsCount: number) => void;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -14,6 +16,8 @@ export default function MobileInputModal({
   isOpen,
   mobile,
   onMobileChange,
+  monthsCount,
+  onMonthsCountChange,
   onConfirm,
   onCancel,
 }: MobileInputModalProps) {
@@ -36,10 +40,28 @@ export default function MobileInputModal({
           WebkitBackdropFilter: 'blur(10px)'
         }}
       >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Enter Mobile Number</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Payment</h3>
         <p className="text-sm text-gray-600 mb-4">
-          Please enter your mobile money number to complete the payment.
+          Please enter your mobile money number and select subscription duration.
         </p>
+        
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Subscription Duration
+          </label>
+          <select
+            value={monthsCount}
+            onChange={(e) => onMonthsCountChange(parseInt(e.target.value))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            {Array.from({ length: 24 }, (_, i) => i + 1).map((month) => (
+              <option key={month} value={month}>
+                {month} {month === 1 ? 'Month' : 'Months'}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Mobile Number

@@ -28,6 +28,7 @@ export interface InitiatePaymentRequest {
   planId: number;
   mobile: string;
   description?: string;
+  monthsCount?: number;
 }
 
 export interface InitiatePaymentResponse {

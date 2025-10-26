@@ -34,6 +34,7 @@ export default function PlansPage() {
   const [paymentProcessing, setPaymentProcessing] = useState<number | null>(null);
   const [showMobileInput, setShowMobileInput] = useState<number | null>(null);
   const [mobile, setMobile] = useState("");
+  const [monthsCount, setMonthsCount] = useState(1);
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { subscription } = useAppSelector((state) => state.auth);
@@ -211,6 +212,7 @@ export default function PlansPage() {
         planId: plan.id,
         mobile: mobile.trim(),
         description: `${plan.name} Subscription`,
+        monthsCount: monthsCount,
       }));
 
       console.log('Payment initiation result:', result);
@@ -317,6 +319,8 @@ export default function PlansPage() {
             isOpen={showMobileInput !== null}
             mobile={mobile}
             onMobileChange={setMobile}
+            monthsCount={monthsCount}
+            onMonthsCountChange={setMonthsCount}
             onConfirm={() => {
               const plan = plans.find((p) => p.id === showMobileInput);
               if (plan) confirmPayment(plan);
@@ -324,6 +328,7 @@ export default function PlansPage() {
             onCancel={() => {
               setShowMobileInput(null);
               setMobile('');
+              setMonthsCount(1);
             }}
           />
 
@@ -441,6 +446,11 @@ export default function PlansPage() {
                       <>
                         <Check className="w-4 h-4" />
                         Get Started Free
+                      </>
+                    ) : currentPlanId === plan.id ? (
+                      <>
+                        <CreditCard className="w-4 h-4" />
+                        Renew
                       </>
                     ) : (
                       <>
