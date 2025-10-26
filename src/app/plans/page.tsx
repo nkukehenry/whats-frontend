@@ -395,11 +395,12 @@ export default function PlansPage() {
                    <li><span className="font-medium">Premium Bots:</span> {plan.apiBotLimit }</li>
                 </ul>
                 
-                {currentPlanId === plan.id ? (
+                {currentPlanId === plan.id  &&(
                   <span className="mt-auto bg-green-100 text-green-700 px-6 py-2 rounded-lg font-semibold w-full text-center cursor-default border border-green-300">
                     Current Plan
                   </span>
-                ) : (
+                ) }
+                
                   <button
                     className={`mt-auto px-6 py-2 rounded-lg font-semibold w-full disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${
                       plan.isFree
@@ -459,7 +460,6 @@ export default function PlansPage() {
                       </>
                     )}
                   </button>
-                )}
               </div>
             ))}
           </div>
