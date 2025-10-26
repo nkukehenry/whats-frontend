@@ -8,6 +8,7 @@ interface MobileInputModalProps {
   onMobileChange: (mobile: string) => void;
   monthsCount: number;
   onMonthsCountChange: (monthsCount: number) => void;
+  planPriceCents: number;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -18,6 +19,7 @@ export default function MobileInputModal({
   onMobileChange,
   monthsCount,
   onMonthsCountChange,
+  planPriceCents,
   onConfirm,
   onCancel,
 }: MobileInputModalProps) {
@@ -60,6 +62,19 @@ export default function MobileInputModal({
               </option>
             ))}
           </select>
+          
+          {/* Total Payable Preview */}
+          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-green-800">Total Payable:</span>
+              <span className="text-lg font-bold text-green-900">
+                UGX {(planPriceCents * monthsCount).toLocaleString()}
+              </span>
+            </div>
+            <div className="text-xs text-green-700 mt-1">
+              {planPriceCents.toLocaleString()} × {monthsCount} {monthsCount === 1 ? 'month' : 'months'}
+            </div>
+          </div>
         </div>
 
         <div className="mb-4">

@@ -321,6 +321,7 @@ export default function PlansPage() {
             onMobileChange={setMobile}
             monthsCount={monthsCount}
             onMonthsCountChange={setMonthsCount}
+            planPriceCents={plans.find((p) => p.id === showMobileInput)?.priceCents || 0}
             onConfirm={() => {
               const plan = plans.find((p) => p.id === showMobileInput);
               if (plan) confirmPayment(plan);
@@ -400,9 +401,9 @@ export default function PlansPage() {
                     Current Plan
                   </span>
                 ) }
-                
+
                   <button
-                    className={`mt-auto px-6 py-2 rounded-lg font-semibold w-full disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${
+                    className={`mt-2 px-6 py-2 rounded-lg font-semibold w-full disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${
                       plan.isFree
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'bg-green-600 text-white hover:bg-green-700'
