@@ -11,6 +11,7 @@ import { CreditCard, Check, Loader2 } from "lucide-react";
 import type { PaymentStatus } from "../../types/payment";
 import MobileInputModal from "../../components/MobileInputModal";
 import PaymentProcessingModal from "../../components/PaymentProcessingModal";
+import PaymentReceipt from "../../components/PaymentReceipt";
 
 export interface Plan {
   id: number;
@@ -36,6 +37,12 @@ export default function PlansPage() {
   const [showMobileInput, setShowMobileInput] = useState<number | null>(null);
   const [mobile, setMobile] = useState("");
   const [monthsCount, setMonthsCount] = useState(1);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState<{
+    plan: Plan;
+    monthsCount: number;
+    paymentId: number;
+  } | null>(null);
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { subscription } = useAppSelector((state) => state.auth);
@@ -94,7 +101,19 @@ export default function PlansPage() {
               console.log('Completing subscription for planId:', planId);
               const res = await subscribeToPlan(planId);
               dispatch(setSubscription(res.data));
-              setSuccess("Subscribed!");
+              
+              // Show receipt instead of success message
+              const plan = plans.find((p) => p.id === planId);
+              if (plan) {
+                setReceiptData({
+                  plan,
+                  monthsCount: monthsCount,
+                  paymentId: paymentId,
+                });
+                setShowReceipt(true);
+              } else {
+                setSuccess("Subscribed!");
+              }
             } catch (err) {
               console.error('Subscription failed:', err);
               setError('Payment successful but subscription failed. Please contact support.');
@@ -337,6 +356,20 @@ export default function PlansPage() {
           {/* Payment Processing Modal */}
           <PaymentProcessingModal isOpen={flowState === 'processing'} />
 
+          {/* Payment Receipt Modal */}
+          {receiptData && (
+            <PaymentReceipt
+              isOpen={showReceipt}
+              plan={receiptData.plan}
+              monthsCount={receiptData.monthsCount}
+              paymentId={receiptData.paymentId}
+              onClose={() => {
+                setShowReceipt(false);
+                setReceiptData(null);
+              }}
+            />
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {plans.map((plan) => (
               <div
@@ -406,7 +439,14 @@ export default function PlansPage() {
                       try {
                         const res = await subscribeToPlan(plan.id);
                         dispatch(setSubscription(res.data));
-                        setSuccess("Subscribed!");
+                        
+                        // Show receipt for free plan too
+                        setReceiptData({
+                          plan,
+                          monthsCount: 1, // Free plans are typically 1 month
+                          paymentId: Date.now(), // Generate a receipt ID for free plans
+                        });
+                        setShowReceipt(true);
                       } catch (err: unknown) {
                         if (err && typeof err === 'object' && 'message' in err) {
                           setError((err as { message?: string }).message || "Failed to subscribe");
