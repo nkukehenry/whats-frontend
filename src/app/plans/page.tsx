@@ -10,6 +10,7 @@ import { setFlowState, clearCurrentPayment, setPaymentStatus } from "../../slice
 import { CreditCard, Check, Loader2 } from "lucide-react";
 import type { PaymentStatus } from "../../types/payment";
 import MobileInputModal from "../../components/MobileInputModal";
+import PaymentProcessingModal from "../../components/PaymentProcessingModal";
 
 export interface Plan {
   id: number;
@@ -334,20 +335,7 @@ export default function PlansPage() {
           />
 
           {/* Payment Processing Modal */}
-          {flowState === 'processing' && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white/95 backdrop-blur-md rounded-lg p-8 max-w-md w-full mx-4 text-center shadow-2xl border border-white/20">
-                <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Payment</h3>
-                <p className="text-gray-600 mb-4">
-                  Please complete your paymen. You will be redirected back once payment is complete.
-                </p>
-                <div className="text-sm text-gray-500">
-                  Do not close this window until payment is complete.
-                </div>
-              </div>
-            </div>
-          )}
+          <PaymentProcessingModal isOpen={flowState === 'processing'} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {plans.map((plan) => (
