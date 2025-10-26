@@ -386,7 +386,7 @@ export default function PlansPage() {
                   <li><span className="font-medium">Message Limit:</span> {plan.messageLimit}</li>
                   <li><span className="font-medium">Device Limit:</span> {plan.deviceLimit}</li>
                   <li><span className="font-medium">API Access:</span> {plan.apiAccess ? "Yes" : "No"}</li>
-                   <li><span className="font-medium">All Bots:</span> {plan.basicBotLimit }</li>
+                   <li><span className="font-medium">Basic Bots:</span> {plan.basicBotLimit }</li>
                    <li><span className="font-medium">Premium Bots:</span> {plan.apiBotLimit }</li>
                 </ul>
                 
