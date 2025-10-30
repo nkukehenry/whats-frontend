@@ -1,38 +1,26 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useAppSelector } from "../../hooks";
+import { useAppSelector, useAppDispatch } from "../../hooks";
 import { useRouter } from "next/navigation";
 import Sidebar from "../../components/Sidebar";
-import { fetchPaymentPlansThunk } from "../../slices/paymentThunks";
-import { setPlans } from "../../slices/paymentSlice";
-import { useAppDispatch } from "../../hooks";
 import { setSubscription } from "../../slices/authSlice";
 import { fetchCurrentSubscription } from "../../utils/api";
 import type { PaymentPlan } from "../../types/payment";
-import { CreditCard, Calendar, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { CreditCard, Calendar, CheckCircle, AlertCircle, ArrowRight, Download } from "lucide-react";
+import PaymentReceipt from "../../components/PaymentReceipt";
 
 export default function SubscriptionPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { subscription, hydrated, user } = useAppSelector((state) => state.auth);
-  const { plans } = useAppSelector((state) => state.payment);
   const [loadingSubscription, setLoadingSubscription] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
     if (user && hydrated) {
       const fetchData = async () => {
         console.log('Fetching subscription data...');
         
-        // Fetch plans
-        try {
-          const plansResult = await dispatch(fetchPaymentPlansThunk());
-          if (plansResult.type === 'payment/fetchPlans/fulfilled' && plansResult.payload && Array.isArray(plansResult.payload)) {
-            dispatch(setPlans(plansResult.payload as PaymentPlan[]));
-          }
-        } catch (err) {
-          console.error('Failed to fetch plans:', err);
-        }
-
         // Always fetch current subscription from API to ensure we have the latest data
         setLoadingSubscription(true);
         try {
@@ -105,8 +93,33 @@ export default function SubscriptionPage() {
 
   const { plan, startDate, endDate, isActive } = subscription as { plan: PaymentPlan, startDate: string, endDate: string, isActive: boolean };
   
-  const handleManageSubscription = () => {
-    router.push("/plans");
+  // Extended plan type for receipt (includes all fields PaymentReceipt needs)
+  interface ExtendedPlan extends PaymentPlan {
+    messageLimit?: number;
+    deviceLimit?: number;
+    period?: string;
+    basicBotLimit?: number;
+    apiBotLimit?: number;
+    apiAccess?: boolean;
+  }
+  
+  const receiptPlan = plan as ExtendedPlan;
+  
+  // Calculate months count from subscription dates
+  const calculateMonthsCount = () => {
+    if (!startDate || !endDate) return 1;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    return Math.max(1, monthsDiff);
+  };
+
+  const monthsCount = calculateMonthsCount();
+  
+  // Generate a receipt ID from subscription data
+  const getReceiptId = () => {
+    if (!startDate) return Date.now();
+    return new Date(startDate).getTime();
   };
 
   const isExpiringSoon = () => {
@@ -120,6 +133,24 @@ export default function SubscriptionPage() {
     const endDateObj = new Date(endDate);
     const today = new Date();
     return endDateObj < today && !plan?.isFree;
+  };
+
+  const isReceiptDisabled = () => {
+    return plan?.isFree || isExpired();
+  };
+
+  const handleManageSubscription = () => {
+    router.push("/plans");
+  };
+
+  const handleDownloadReceipt = () => {
+    if (isReceiptDisabled()) return;
+    console.log('Download receipt clicked');
+    setShowReceipt(true);
+  };
+
+  const handleCloseReceipt = () => {
+    setShowReceipt(false);
   };
 
   return (
@@ -154,7 +185,7 @@ export default function SubscriptionPage() {
             
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Price:</span>
-              <span className="font-semibold">UGX {plan?.priceCents?.toLocaleString() || '0.00'}/month</span>
+              <span className="font-semibold">${plan?.priceCents ? (plan.priceCents / 3500).toFixed(2) : '0.00'}/month</span>
             </div>
             
             <div className="flex items-center justify-between">
@@ -201,20 +232,57 @@ export default function SubscriptionPage() {
           )}
 
           <div className="space-y-3">
-              <button
+            <button
               className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
               onClick={handleManageSubscription}
-              >
+            >
               <Calendar className="w-4 h-4" />
               Manage Subscription
-              </button>
+            </button>
+
+            <button
+              className={`w-full px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
+                isReceiptDisabled()
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              onClick={handleDownloadReceipt}
+              type="button"
+              disabled={isReceiptDisabled()}
+            >
+              <Download className="w-4 h-4" />
+              Download Receipt
+            </button>
             
             <p className="text-xs text-gray-500 text-center">
               Secure payment processing • Cancel anytime
             </p>
-            </div>
+          </div>
         </div>
       </div>
+      
+      {/* Payment Receipt Modal */}
+      {plan && (
+        <PaymentReceipt
+          isOpen={showReceipt}
+          plan={{
+            id: plan.id,
+            name: plan.name,
+            priceCents: plan.priceCents,
+            messageLimit: receiptPlan.messageLimit ?? 0,
+            deviceLimit: receiptPlan.deviceLimit ?? 0,
+            apiAccess: receiptPlan.apiAccess ?? false,
+            period: receiptPlan.period ?? 'month',
+            basicBotLimit: receiptPlan.basicBotLimit ?? 0,
+            apiBotLimit: receiptPlan.apiBotLimit ?? 0,
+          }}
+          monthsCount={monthsCount}
+          paymentId={getReceiptId()}
+          startDate={startDate}
+          endDate={endDate}
+          onClose={handleCloseReceipt}
+        />
+      )}
     </div>
   );
-} 
+}

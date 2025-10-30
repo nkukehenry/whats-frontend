@@ -78,6 +78,26 @@ export interface PaymentFormSubmission {
   formData: PaymentFormData;
 }
 
+// Register Form Payment Request
+export interface RegisterFormPaymentRequest {
+  planId: number;
+  currency?: string;
+  description?: string;
+  note?: string;
+}
+
+// Register Form Payment Response
+export interface RegisterFormPaymentResponse {
+  success: boolean;
+  message: string;
+  data: {
+    paymentId: number;
+    ref: string;
+    planAmount: number;
+    formData: PaymentFormData;
+  };
+}
+
 // Payment flow states
 export type PaymentFlowState = 'idle' | 'registering' | 'submitting' | 'processing' | 'completed' | 'failed' | 'cancelled';
 

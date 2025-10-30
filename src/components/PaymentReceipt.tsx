@@ -19,6 +19,8 @@ interface PaymentReceiptProps {
   };
   monthsCount: number;
   paymentId: number;
+  startDate?: string;
+  endDate?: string;
   onClose: () => void;
 }
 
@@ -27,6 +29,8 @@ export default function PaymentReceipt({
   plan,
   monthsCount,
   paymentId,
+  startDate,
+  endDate,
   onClose,
 }: PaymentReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -39,6 +43,16 @@ export default function PaymentReceipt({
         scale: 2,
         useCORS: true,
         allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Force all elements to use standard colors
+          const clonedElement = clonedDoc.querySelector('[data-receipt-pdf]') as HTMLElement;
+          if (clonedElement) {
+            clonedElement.style.color = '#000000';
+            clonedElement.style.backgroundColor = '#ffffff';
+          }
+        },
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -70,12 +84,17 @@ export default function PaymentReceipt({
 
   if (!isOpen) return null;
 
-  const totalAmount = plan.priceCents * monthsCount;
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const currentDate = startDate 
+    ? new Date(startDate).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
 
   return (
     <div 
@@ -95,22 +114,26 @@ export default function PaymentReceipt({
         }}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-green-700">Payment Receipt</h2>
+          <h2 className="text-2xl font-bold" style={{ color: '#15803d' }}>Payment Receipt</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+            className="text-xl font-bold"
+            style={{ color: '#6b7280' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#374151'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
           >
             ×
           </button>
         </div>
 
         {/* Receipt Content */}
-        <div ref={receiptRef} className="bg-white p-8 rounded-lg shadow-lg">
+        <div ref={receiptRef} data-receipt-pdf className="bg-white p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#ffffff', color: '#000000' }}>
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-green-700 mb-2">Alpha Meals</h1>
-            <p className="text-gray-600">WhatsApp Automation Platform</p>
-            <div className="mt-4 flex items-center justify-center gap-2 text-green-600">
+            <h1 className="text-3xl font-bold mb-2" style={{ color: '#15803d' }}>Bulkoms</h1>
+            <p style={{ color: '#4b5563' }}>WhatsApp Automation Platform</p>
+            <p className="text-sm mt-1" style={{ color: '#6b7280' }}>https://bulkoms.com</p>
+            <div className="mt-4 flex items-center justify-center gap-2" style={{ color: '#16a34a' }}>
               <CheckCircle className="w-6 h-6" />
               <span className="font-semibold">Payment Successful</span>
             </div>
@@ -119,77 +142,90 @@ export default function PaymentReceipt({
           {/* Receipt Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: '#111827' }}>Payment Information</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Receipt ID:</span>
-                  <span className="font-medium">#{paymentId}</span>
+                  <span style={{ color: '#4b5563' }}>Receipt ID:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>#{paymentId}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Date:</span>
-                  <span className="font-medium">{currentDate}</span>
+                  <span style={{ color: '#4b5563' }}>Date:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>{currentDate}</span>
+                </div>
+                {startDate && (
+                  <div className="flex justify-between">
+                    <span style={{ color: '#4b5563' }}>Start Date:</span>
+                    <span className="font-medium" style={{ color: '#000000' }}>{new Date(startDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
+                  </div>
+                )}
+                {endDate && (
+                  <div className="flex justify-between">
+                    <span style={{ color: '#4b5563' }}>End Date:</span>
+                    <span className="font-medium" style={{ color: '#000000' }}>{new Date(endDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span style={{ color: '#4b5563' }}>Plan:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>{plan.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Plan:</span>
-                  <span className="font-medium">{plan.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Duration:</span>
-                  <span className="font-medium">{monthsCount} {monthsCount === 1 ? 'Month' : 'Months'}</span>
+                  <span style={{ color: '#4b5563' }}>Duration:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>{monthsCount} {monthsCount === 1 ? 'Month' : 'Months'}</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Plan Details</h3>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: '#111827' }}>Plan Details</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Message Limit:</span>
-                  <span className="font-medium">{plan.messageLimit.toLocaleString()}</span>
+                  <span style={{ color: '#4b5563' }}>Message Limit:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>{plan.messageLimit.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Device Limit:</span>
-                  <span className="font-medium">{plan.deviceLimit}</span>
+                  <span style={{ color: '#4b5563' }}>Device Limit:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>{plan.deviceLimit}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">API Access:</span>
-                  <span className="font-medium">{plan.apiAccess ? 'Yes' : 'No'}</span>
+                  <span style={{ color: '#4b5563' }}>API Access:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>{plan.apiAccess ? 'Yes' : 'No'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Basic Bots:</span>
-                  <span className="font-medium">{plan.basicBotLimit}</span>
+                  <span style={{ color: '#4b5563' }}>Basic Bots:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>{plan.basicBotLimit}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Premium Bots:</span>
-                  <span className="font-medium">{plan.apiBotLimit}</span>
+                  <span style={{ color: '#4b5563' }}>Premium Bots:</span>
+                  <span className="font-medium" style={{ color: '#000000' }}>{plan.apiBotLimit}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Pricing Breakdown */}
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing Breakdown</h3>
+          <div className="border-t pt-6" style={{ borderTopColor: '#e5e7eb' }}>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#111827' }}>Pricing Breakdown</h3>
             <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">Rate per Month:</span>
-                <span className="font-medium">UGX {plan.priceCents.toLocaleString()}</span>
+              <div className="flex justify-between items-center py-2 border-b px-4" style={{ borderBottomColor: '#e5e7eb' }}>
+                <span style={{ color: '#4b5563' }}>Rate per Month:</span>
+                <span className="font-medium" style={{ color: '#000000' }}>${(plan.priceCents / 3500).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">Duration:</span>
-                <span className="font-medium">{monthsCount} {monthsCount === 1 ? 'Month' : 'Months'}</span>
+              <div className="flex justify-between items-center py-2 border-b px-4" style={{ borderBottomColor: '#e5e7eb' }}>
+                <span style={{ color: '#4b5563' }}>Duration:</span>
+                <span className="font-medium" style={{ color: '#000000' }}>{monthsCount} {monthsCount === 1 ? 'Month' : 'Months'}</span>
               </div>
-              <div className="flex justify-between items-center py-3 bg-green-50 rounded-lg px-4">
-                <span className="text-lg font-semibold text-green-800">Total Amount:</span>
-                <span className="text-xl font-bold text-green-900">UGX {totalAmount.toLocaleString()}</span>
+              <div className="flex justify-between items-center py-3 rounded-lg px-4" style={{ backgroundColor: '#f0fdf4' }}>
+                <span className="text-lg font-semibold" style={{ color: '#166534' }}>Total Amount:</span>
+                <span className="text-xl font-bold" style={{ color: '#14532d' }}>${((plan.priceCents * monthsCount) / 3500).toFixed(2)}</span>
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="mt-8 text-center text-sm text-gray-500">
-            <p>Thank you for choosing Alpha Meals!</p>
+          <div className="mt-8 text-center text-sm" style={{ color: '#6b7280' }}>
+            <p>Thank you for choosing Bulkoms!</p>
             <p className="mt-2">This receipt serves as proof of payment for your subscription.</p>
+            <p className="mt-2 text-xs">Visit us at https://bulkoms.com</p>
           </div>
         </div>
 
@@ -197,14 +233,20 @@ export default function PaymentReceipt({
         <div className="flex gap-3 mt-6">
           <button
             onClick={generatePDF}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white transition-colors"
+            style={{ backgroundColor: '#16a34a' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
           >
             <Download className="w-5 h-5" />
             Download PDF Receipt
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-6 py-3 border rounded-lg transition-colors"
+            style={{ borderColor: '#d1d5db', color: '#374151' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             Close
           </button>

@@ -7,8 +7,6 @@ import type {
   InitiatePaymentResponse,
   PaymentStatusResponse,
   PaymentStatus,
-  RegisterFormPaymentRequest,
-  RegisterFormPaymentResponse,
 } from '../types/payment';
 
 // Fetch Payment Plans
@@ -101,37 +99,5 @@ export const checkPaymentStatusThunk = createAsyncThunk<
   }
 );
 
-// Register Form Payment
-export const registerFormPaymentThunk = createAsyncThunk<
-  RegisterFormPaymentResponse['data'],
-  RegisterFormPaymentRequest,
-  { state: RootState; rejectValue: string }
->(
-  'payment/registerFormPayment',
-  async (payload, { getState, rejectWithValue }) => {
-    const state = getState();
-    const token = state.auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
-
-    try {
-      const result = await apiFetch<RegisterFormPaymentResponse>('/payments/register-form-payment', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        token,
-      });
-
-      if (!result.success) {
-        return rejectWithValue(result.message || 'Payment registration failed');
-      }
-
-      return result.data;
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'message' in err) {
-        return rejectWithValue((err as { message?: string }).message || 'Unknown error');
-      }
-      return rejectWithValue('Unknown error');
-    }
-  }
-);
 
 

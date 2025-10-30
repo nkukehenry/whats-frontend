@@ -3,20 +3,40 @@ import React, { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "../../../components/Sidebar";
 import { CheckCircle, ArrowRight, Home } from "lucide-react";
+import { useAppDispatch } from "../../../hooks";
+import { subscribeToPlan } from "../../../utils/api";
+import { setSubscription } from "../../../slices/authSlice";
 
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const dispatch = useAppDispatch();
   
   const status = searchParams.get('status');
   const memo = searchParams.get('memo');
   const ref = searchParams.get('ref');
 
   useEffect(() => {
-    // Clear any pending payment from session storage
-    sessionStorage.removeItem('pendingPaymentId');
-    sessionStorage.removeItem('paymentPlanId');
-  }, []);
+    const handlePaymentSuccess = async () => {
+      // Clear any pending payment from session storage
+      const paymentPlanId = sessionStorage.getItem('paymentPlanId');
+      sessionStorage.removeItem('pendingPaymentId');
+      sessionStorage.removeItem('paymentPlanId');
+      
+      // If payment is approved and we have a plan ID, complete the subscription
+      if (status === 'approved' && paymentPlanId) {
+        try {
+          const planId = parseInt(paymentPlanId);
+          const res = await subscribeToPlan(planId);
+          dispatch(setSubscription(res.data));
+        } catch (err) {
+          console.error('Failed to complete subscription:', err);
+        }
+      }
+    };
+
+    handlePaymentSuccess();
+  }, [status, dispatch]);
 
   const handleGoToDashboard = () => {
     router.push('/dashboard');

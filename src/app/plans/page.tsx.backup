@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import Sidebar from "../../components/Sidebar";
 import { useAppDispatch, useAppSelector } from "../../hooks";
 import { setSubscription } from "../../slices/authSlice";
-import { registerFormPaymentThunk, checkPaymentStatusThunk } from "../../slices/paymentThunks";
+import { initiatePaymentThunk, checkPaymentStatusThunk } from "../../slices/paymentThunks";
 import { setFlowState, clearCurrentPayment, setPaymentStatus } from "../../slices/paymentSlice";
 import { CreditCard, Check, Loader2 } from "lucide-react";
-import type { PaymentStatus, RegisterFormPaymentResponse } from "../../types/payment";
+import type { PaymentStatus } from "../../types/payment";
+import MobileInputModal from "../../components/MobileInputModal";
 import PaymentProcessingModal from "../../components/PaymentProcessingModal";
 import PaymentReceipt from "../../components/PaymentReceipt";
 
@@ -33,6 +34,8 @@ export default function PlansPage() {
   const [subscribing, setSubscribing] = useState<number | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState<number | null>(null);
+  const [showMobileInput, setShowMobileInput] = useState<number | null>(null);
+  const [mobile, setMobile] = useState("");
   const [monthsCount, setMonthsCount] = useState(1);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState<{
@@ -197,127 +200,68 @@ export default function PlansPage() {
     checkAndResumePayment();
   }, [dispatch, startPaymentStatusCheck]);
 
-  // Handle payment flow for paid plans using JPesa form
+  // Handle payment flow for paid plans
   const handlePaidPlanSubscription = async (plan: Plan) => {
     setError(null);
+    
+    // Show mobile input dialog
+    setShowMobileInput(plan.id);
+  };
+
+  const confirmPayment = async (plan: Plan) => {
+    if (!mobile || mobile.trim() === '') {
+      setError('Please enter your mobile number');
+      return;
+    }
+
+    // Validate mobile number format (should start with country code)
+    const phoneRegex = /^\+?\d{9,15}$/;
+    if (!phoneRegex.test(mobile.trim())) {
+      setError('Please enter a valid mobile number (e.g., 256752567374)');
+      return;
+    }
+
     setPaymentProcessing(plan.id);
-    dispatch(setFlowState('registering'));
+    setError(null);
+    setShowMobileInput(null);
     
     try {
-      console.log('Registering form payment for plan:', plan.id);
+      console.log('Initiating payment for plan:', plan.id);
       
-      const result = await dispatch(registerFormPaymentThunk({
+      const result = await dispatch(initiatePaymentThunk({
         planId: plan.id,
-        currency: 'USD',
+        mobile: mobile.trim(),
         description: `${plan.name} Subscription`,
-        note: `Subscription for ${monthsCount} ${monthsCount === 1 ? 'month' : 'months'}`,
+        monthsCount: monthsCount,
       }));
 
-      console.log('Payment registration result:', result);
+      console.log('Payment initiation result:', result);
+      console.log('Result type:', result.type);
+      console.log('Result payload:', result.payload);
 
-      if (result.type === 'payment/registerFormPayment/fulfilled' && result.payload) {
-        console.log('Payment registered successfully:', result.payload);
+      if (result.type === 'payment/initiatePayment/fulfilled' && result.payload) {
+        console.log('Payment initiated successfully:', result.payload);
         
-        const paymentData = result.payload as RegisterFormPaymentResponse['data'];
+        const paymentData = result.payload as { paymentId: number; jpesaTid: string; jpesaMemo: string; message: string };
         
         // Store payment ID for status checking
         sessionStorage.setItem('pendingPaymentId', paymentData.paymentId.toString());
         sessionStorage.setItem('paymentPlanId', plan.id.toString());
         
-        dispatch(setFlowState('submitting'));
+        dispatch(setFlowState('processing'));
         
-        // Submit form to JPesa
-        submitPaymentForm(paymentData.formData, paymentData.paymentId, plan.id);
-      } else if (result.type === 'payment/registerFormPayment/rejected') {
-        console.error('Payment registration rejected:', result.payload);
-        const errorMessage = typeof result.payload === 'string' ? result.payload : 'Failed to register payment. Please try again.';
+        // Start checking payment status
+        startPaymentStatusCheck(paymentData.paymentId, plan.id);
+      } else if (result.type === 'payment/initiatePayment/rejected') {
+        console.error('Payment initiation rejected:', result.payload);
+        const errorMessage = typeof result.payload === 'string' ? result.payload : 'Failed to initiate payment. Please try again.';
         setError(errorMessage);
         setPaymentProcessing(null);
         dispatch(setFlowState('failed'));
       }
     } catch (err) {
-      console.error('Payment registration failed:', err);
-      setError('Failed to register payment. Please try again.');
-      setPaymentProcessing(null);
-      dispatch(setFlowState('failed'));
-    }
-  };
-
-  // Submit payment form to JPesa external link
-  const submitPaymentForm = (
-    formData: { action: string; ownerid: string; amount: number; cur: string; description: string; return: string; cancel: string },
-    paymentId: number,
-    planId: number
-  ) => {
-    try {
-      // Create form element (matching actual JPesa form structure)
-      const form = document.createElement('form');
-      form.name = 'JPesa';
-      form.method = 'POST';
-      form.action = formData.action;
-      form.target = '_blank'; // Open in new tab/window
-      
-      // Add hidden fields
-      const hiddenFields = {
-        ownerid: formData.ownerid,
-        description: formData.description,
-        return: formData.return,
-        cancel: formData.cancel
-      };
-      
-      Object.entries(hiddenFields).forEach(([name, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-      });
-      
-      // Add currency select dropdown
-      const currencySelect = document.createElement('select');
-      currencySelect.name = 'cur';
-      
-      // Add currency options
-      const currencies = ['UGX', 'KES', 'USD'];
-      currencies.forEach(curr => {
-        const option = document.createElement('option');
-        option.value = curr;
-        option.textContent = curr;
-        if (curr === formData.cur) {
-          option.selected = true;
-        }
-        currencySelect.appendChild(option);
-      });
-      
-      form.appendChild(currencySelect);
-      
-      // Add amount input field
-      const amountInput = document.createElement('input');
-      amountInput.name = 'amount';
-      amountInput.type = 'text';
-      amountInput.size = 15;
-      amountInput.value = formData.amount.toString();
-      form.appendChild(amountInput);
-      
-      // Add submit button
-      const submitButton = document.createElement('input');
-      submitButton.type = 'submit';
-      submitButton.name = 'pay';
-      submitButton.value = 'Make Payment';
-      form.appendChild(submitButton);
-      
-      // Submit form
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-      
-      // Set processing state and start status checking
-      dispatch(setFlowState('processing'));
-      startPaymentStatusCheck(paymentId, planId);
-      
-    } catch (err) {
-      console.error('Form submission failed:', err);
-      setError('Failed to submit payment form. Please try again.');
+      console.error('Payment initiation failed:', err);
+      setError('Failed to initiate payment. Please try again.');
       setPaymentProcessing(null);
       dispatch(setFlowState('failed'));
     }
@@ -390,8 +334,27 @@ export default function PlansPage() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">Choose Your Plan</h1>
           
+          {/* Mobile Input Modal */}
+          <MobileInputModal
+            isOpen={showMobileInput !== null}
+            mobile={mobile}
+            onMobileChange={setMobile}
+            monthsCount={monthsCount}
+            onMonthsCountChange={setMonthsCount}
+            planPriceCents={plans.find((p) => p.id === showMobileInput)?.priceCents || 0}
+            onConfirm={() => {
+              const plan = plans.find((p) => p.id === showMobileInput);
+              if (plan) confirmPayment(plan);
+            }}
+            onCancel={() => {
+              setShowMobileInput(null);
+              setMobile('');
+              setMonthsCount(1);
+            }}
+          />
+
           {/* Payment Processing Modal */}
-          <PaymentProcessingModal isOpen={flowState === 'registering' || flowState === 'submitting' || flowState === 'processing'} />
+          <PaymentProcessingModal isOpen={flowState === 'processing'} />
 
           {/* Payment Receipt Modal */}
           {receiptData && (
@@ -432,7 +395,7 @@ export default function PlansPage() {
                     <span className="text-blue-600">Free</span>
                   ) : (
                     <>
-                      ${(plan.priceCents / 3500).toFixed(2)}
+                      UGX {(plan.priceCents).toLocaleString()}
                   <span className="text-base font-medium text-gray-500 ml-1">/ {plan.period}</span>
                     </>
                   )}
@@ -494,7 +457,7 @@ export default function PlansPage() {
                         setSubscribing(null);
                         }
                       } else {
-                        // Handle paid plan subscription with JPesa form payment
+                        // Handle paid plan subscription with payment
                         await handlePaidPlanSubscription(plan);
                       }
                     }}
@@ -555,4 +518,5 @@ export default function PlansPage() {
       </div>
     </div>
   );
-} 
+}
+
