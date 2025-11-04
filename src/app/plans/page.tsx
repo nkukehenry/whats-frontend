@@ -463,8 +463,8 @@ export default function PlansPage() {
                   )}
                 </div>
 
-                {!plan.isFree && ( <div className="text-3xl font-extrabold text-gray-900 mb-4">
-                      ${(((plan.priceCents / 3500)*12)*0.1).toFixed(2)}
+                {!plan.isFree && ( <div className="text-xl font-extrabold text-gray-900 mb-4">
+                      ${(((plan.priceCents  / 3500 -((plan.priceCents  / 3500)*0.1))*12)).toFixed(2)}
                      <span className="text-base font-medium text-gray-500 ml-1">/Yearly</span>
                 </div>
                   )}
