@@ -140,21 +140,23 @@ export default function PlansPage() {
       }
     }, 5000); // Check every 5 seconds
 
-    // Clear interval after 10 minutes
+    // Clear interval after 60 seconds and show completion notification
     setTimeout(() => {
       if (intervalRef.current) {
-        console.log('Stopping status check after 10 minutes');
+        console.log('Stopping status check after 60 seconds');
         clearInterval(intervalRef.current);
         intervalRef.current = null;
         
-        // Clean up sessionStorage if still pending after timeout
+        // Clean up sessionStorage
         sessionStorage.removeItem('pendingPaymentId');
         sessionStorage.removeItem('paymentPlanId');
         dispatch(setFlowState('idle'));
         setPaymentProcessing(null);
-        setError('Payment timeout. Please try again.');
+        
+        // Show completion notification
+        setSuccess('Payment processing complete. Your account will be activated shortly. Please check your subscription status.');
       }
-    }, 600000);
+    }, 60000); // 60 seconds
   }, [dispatch]);
 
   // Handle stale payment state and resume payment check on mount
@@ -373,11 +375,14 @@ export default function PlansPage() {
         <Sidebar activeTab="subscription" />
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold mb-4 text-green-700">Subscribed!</h2>
-            <p className="text-gray-700 mb-6">You have successfully subscribed to a plan.</p>
+            <h2 className="text-2xl font-bold mb-4 text-green-700">Payment Complete!</h2>
+            <p className="text-gray-700 mb-6">{success}</p>
             <button
               className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-              onClick={() => router.push("/subscriptions")}
+              onClick={() => {
+                setSuccess(null);
+                router.push("/subscriptions");
+              }}
             >
               Go to My Subscription
             </button>
