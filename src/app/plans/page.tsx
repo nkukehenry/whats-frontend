@@ -214,6 +214,7 @@ export default function PlansPage() {
         currency: 'USD',
         description: `${plan.name} Subscription`,
         note: `Subscription for ${selectedMonthsCount} ${selectedMonthsCount === 1 ? 'month' : 'months'}`,
+        monthsCount: selectedMonthsCount,
       }));
 
       console.log('Payment registration result:', result);

@@ -84,6 +84,7 @@ export interface RegisterFormPaymentRequest {
   currency?: string;
   description?: string;
   note?: string;
+  monthsCount?: number;
 }
 
 // Register Form Payment Response
