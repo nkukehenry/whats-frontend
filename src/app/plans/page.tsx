@@ -154,7 +154,7 @@ export default function PlansPage() {
         setPaymentProcessing(null);
         
         // Show completion notification
-        setSuccess('Payment processing complete. Your account will be activated shortly. Please check your subscription status.');
+        setSuccess('Your payment is being processed. Your account will be activated upon system payment confirmation. Please check your subscription status shortly.');
       }
     }, 60000); // 60 seconds
   }, [dispatch]);
@@ -375,7 +375,7 @@ export default function PlansPage() {
         <Sidebar activeTab="subscription" />
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold mb-4 text-green-700">Payment Complete!</h2>
+            <h2 className="text-2xl font-bold mb-4 text-green-700">Payment Processing</h2>
             <p className="text-gray-700 mb-6">{success}</p>
             <button
               className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
