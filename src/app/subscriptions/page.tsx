@@ -280,6 +280,8 @@ export default function SubscriptionPage() {
           paymentId={getReceiptId()}
           startDate={startDate}
           endDate={endDate}
+          userName={user?.email}
+          userEmail={user?.email}
           onClose={handleCloseReceipt}
         />
       )}

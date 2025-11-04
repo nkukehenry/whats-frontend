@@ -21,6 +21,8 @@ interface PaymentReceiptProps {
   paymentId: number;
   startDate?: string;
   endDate?: string;
+  userName?: string;
+  userEmail?: string;
   onClose: () => void;
 }
 
@@ -31,6 +33,8 @@ export default function PaymentReceipt({
   paymentId,
   startDate,
   endDate,
+  userName,
+  userEmail,
   onClose,
 }: PaymentReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -144,6 +148,12 @@ export default function PaymentReceipt({
             <div>
               <h3 className="text-lg font-semibold mb-4" style={{ color: '#111827' }}>Payment Information</h3>
               <div className="space-y-2 text-sm">
+                {userName && (
+                  <div className="flex justify-between">
+                    <span style={{ color: '#4b5563' }}>Account Name:</span>
+                    <span className="font-medium" style={{ color: '#000000' }}>{userName}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span style={{ color: '#4b5563' }}>Receipt ID:</span>
                   <span className="font-medium" style={{ color: '#000000' }}>#{paymentId}</span>

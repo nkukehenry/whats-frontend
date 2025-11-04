@@ -11,6 +11,7 @@ import { CreditCard, Check, Loader2 } from "lucide-react";
 import type { PaymentStatus, RegisterFormPaymentResponse } from "../../types/payment";
 import PaymentProcessingModal from "../../components/PaymentProcessingModal";
 import PaymentReceipt from "../../components/PaymentReceipt";
+import SubscriptionDurationModal from "../../components/SubscriptionDurationModal";
 
 export interface Plan {
   id: number;
@@ -35,6 +36,8 @@ export default function PlansPage() {
   const [paymentProcessing, setPaymentProcessing] = useState<number | null>(null);
   const [monthsCount, setMonthsCount] = useState(1);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showDurationModal, setShowDurationModal] = useState(false);
+  const [selectedPlanForDuration, setSelectedPlanForDuration] = useState<Plan | null>(null);
   const [receiptData, setReceiptData] = useState<{
     plan: Plan;
     monthsCount: number;
@@ -198,19 +201,19 @@ export default function PlansPage() {
   }, [dispatch, startPaymentStatusCheck]);
 
   // Handle payment flow for paid plans using JPesa form
-  const handlePaidPlanSubscription = async (plan: Plan) => {
+  const handlePaidPlanSubscription = async (plan: Plan, selectedMonthsCount: number = monthsCount) => {
     setError(null);
     setPaymentProcessing(plan.id);
     dispatch(setFlowState('registering'));
     
     try {
-      console.log('Registering form payment for plan:', plan.id);
+      console.log('Registering form payment for plan:', plan.id, 'for', selectedMonthsCount, 'months');
       
       const result = await dispatch(registerFormPaymentThunk({
         planId: plan.id,
         currency: 'USD',
         description: `${plan.name} Subscription`,
-        note: `Subscription for ${monthsCount} ${monthsCount === 1 ? 'month' : 'months'}`,
+        note: `Subscription for ${selectedMonthsCount} ${selectedMonthsCount === 1 ? 'month' : 'months'}`,
       }));
 
       console.log('Payment registration result:', result);
@@ -407,6 +410,28 @@ export default function PlansPage() {
             />
           )}
 
+          {/* Subscription Duration Modal */}
+          {selectedPlanForDuration && (
+            <SubscriptionDurationModal
+              isOpen={showDurationModal}
+              planName={selectedPlanForDuration.name}
+              planPriceCents={selectedPlanForDuration.priceCents}
+              planPeriod={selectedPlanForDuration.period}
+              currentMonthsCount={monthsCount}
+              onConfirm={(months) => {
+                setMonthsCount(months);
+                setShowDurationModal(false);
+                // Proceed with payment registration after selecting duration
+                handlePaidPlanSubscription(selectedPlanForDuration, months);
+                setSelectedPlanForDuration(null);
+              }}
+              onCancel={() => {
+                setShowDurationModal(false);
+                setSelectedPlanForDuration(null);
+              }}
+            />
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {plans.map((plan) => (
               <div
@@ -433,10 +458,16 @@ export default function PlansPage() {
                   ) : (
                     <>
                       ${(plan.priceCents / 3500).toFixed(2)}
-                  <span className="text-base font-medium text-gray-500 ml-1">/ {plan.period}</span>
+                     <span className="text-base font-medium text-gray-500 ml-1">/ {plan.period}</span>
                     </>
                   )}
                 </div>
+
+                {plan.isFree && ( <div className="text-3xl font-extrabold text-gray-900 mb-4">
+                      ${(((plan.priceCents / 3500)*12)*0.1).toFixed(2)}
+                     <span className="text-base font-medium text-gray-500 ml-1">/Yearly</span>
+                </div>
+                  )}
 
                 {plan.trialPeriodDays > 0 && (
                   <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 w-full">
@@ -494,8 +525,9 @@ export default function PlansPage() {
                         setSubscribing(null);
                         }
                       } else {
-                        // Handle paid plan subscription with JPesa form payment
-                        await handlePaidPlanSubscription(plan);
+                        // Show duration selection modal before payment registration
+                        setSelectedPlanForDuration(plan);
+                        setShowDurationModal(true);
                       }
                     }}
                   >
