@@ -28,8 +28,12 @@ export default function SubscriptionDurationModal({
   if (!isOpen) return null;
 
   const totalMonths = selectedMonths + (selectedYears * 12);
-  const totalPrice = (planPriceCents * totalMonths) / 3500; // Convert cents to USD
   const monthlyPrice = planPriceCents / 3500;
+  const originalTotalPrice = (planPriceCents * totalMonths) / 3500; // Convert cents to USD
+  const hasDiscount = totalMonths >= 12;
+  const discountPercent = hasDiscount ? 10 : 0;
+  const discountAmount = hasDiscount ? originalTotalPrice * 0.1 : 0;
+  const totalPrice = hasDiscount ? originalTotalPrice - discountAmount : originalTotalPrice;
 
   const handleConfirm = () => {
     if (totalMonths > 0) {
@@ -131,21 +135,54 @@ export default function SubscriptionDurationModal({
           </div>
           
           {/* Total Summary */}
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className={`p-4 border rounded-lg ${hasDiscount ? 'bg-green-50 border-green-300' : 'bg-green-50 border-green-200'}`}>
+            {hasDiscount && (
+              <div className="mb-3 pb-3 border-b border-green-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-green-800">10% Discount Applied!</span>
+                  <span className="px-2 py-1 bg-green-600 text-white text-xs font-bold rounded">
+                    SAVE {discountPercent}%
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-green-800">Total Duration:</span>
               <span className="text-lg font-bold text-green-900">
                 {totalMonths} {totalMonths === 1 ? 'Month' : 'Months'}
               </span>
             </div>
+            {hasDiscount && (
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm text-green-700 line-through">Original Price:</span>
+                <span className="text-sm text-green-600 line-through">
+                  ${originalTotalPrice.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {hasDiscount && (
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm text-green-700">Discount:</span>
+                <span className="text-sm font-semibold text-green-600">
+                  -${discountAmount.toFixed(2)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-green-800">Total Amount:</span>
-              <span className="text-xl font-bold text-green-900">
+              <span className={`text-sm font-medium ${hasDiscount ? 'text-green-900' : 'text-green-800'}`}>
+                {hasDiscount ? 'Discounted Price:' : 'Total Amount:'}
+              </span>
+              <span className={`font-bold ${hasDiscount ? 'text-xl text-green-900' : 'text-xl text-green-900'}`}>
                 ${totalPrice.toFixed(2)}
               </span>
             </div>
             <div className="text-xs text-green-700 mt-2 pt-2 border-t border-green-200">
               ${monthlyPrice.toFixed(2)} × {totalMonths} {planPeriod}{totalMonths !== 1 ? 's' : ''}
+              {hasDiscount && (
+                <span className="ml-2 text-green-600 font-semibold">
+                  (10% off for {totalMonths >= 12 ? '12+ months' : ''})
+                </span>
+              )}
             </div>
           </div>
         </div>
