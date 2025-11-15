@@ -1,21 +1,18 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "../../../../hooks";
 import Sidebar from "../../../../components/Sidebar";
-import { 
-  fetchGroupMessagesThunk,
-  sendGroupMessageThunk 
-} from "../../../../slices/groupThunks";
-import { clearError, setGroupMessages } from "../../../../slices/groupSlice";
+import { sendGroupMessageThunk } from "../../../../slices/groupThunks";
+import { clearError } from "../../../../slices/groupSlice";
 import {
   ArrowLeft,
   Send,
-  RefreshCw,
   MessageSquare,
   Users,
-  Clock,
   Loader2,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 export default function GroupChatPage() {
@@ -23,35 +20,14 @@ export default function GroupChatPage() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAppSelector((state) => state.auth);
-  const { selectedGroups } = useAppSelector((state) => state.groups);
-  const { 
-    messages,
-    sendingMessage,
-    fetchingMessages,
-    error 
-  } = useAppSelector((state) => state.groups);
+  const { selectedGroups, sendingMessage, error } = useAppSelector((state) => state.groups);
 
-  const [newMessage, setNewMessage] = useState("");
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const [message, setMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const groupId = Number(params.id);
-  const group = selectedGroups.find(g => g.id === groupId);
-  const groupMessages = React.useMemo(() => {
-    return group ? messages[group.groupId] || [] : [];
-  }, [group, messages]);
-
-  useEffect(() => {
-    if (user && groupId && group) {
-      // Fetch initial messages
-      dispatch(fetchGroupMessagesThunk({ userGroupId: groupId })).then((result) => {
-        if (fetchGroupMessagesThunk.fulfilled.match(result)) {
-          dispatch(setGroupMessages({ groupId: result.payload.groupId, messages: result.payload.messages }));
-        }
-      });
-    }
-  }, [user, groupId, group, dispatch]);
+  const group = selectedGroups.find((g) => g.id === groupId);
 
   useEffect(() => {
     if (!user) {
@@ -68,317 +44,157 @@ export default function GroupChatPage() {
     }
   }, [error, dispatch]);
 
-  useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [groupMessages]);
-
-  useEffect(() => {
-    // Start polling for new messages every 5 seconds
-    if (groupId && group) {
-      const interval = setInterval(() => {
-        dispatch(fetchGroupMessagesThunk({ userGroupId: groupId })).then((result) => {
-          if (fetchGroupMessagesThunk.fulfilled.match(result)) {
-            dispatch(setGroupMessages({ groupId: result.payload.groupId, messages: result.payload.messages }));
-          }
-        });
-      }, 5000);
-      setPollingInterval(interval);
-
-      return () => {
-        clearInterval(interval);
-        setPollingInterval(null);
-      };
-    }
-  }, [groupId, group, dispatch]);
-
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !group || sendingMessage) return;
+    if (!group || !message.trim() || sendingMessage) return;
 
-    const messageText = newMessage.trim();
-    setNewMessage("");
+    setLocalError(null);
+    setSuccessMessage(null);
 
     try {
-      await dispatch(sendGroupMessageThunk({
-        deviceId: group.deviceId,
-        groupId: group.groupId,
-        message: messageText,
-      })).unwrap();
-      
-      // Refresh messages after sending
-      dispatch(fetchGroupMessagesThunk({ userGroupId: groupId })).then((result) => {
-        if (fetchGroupMessagesThunk.fulfilled.match(result)) {
-          dispatch(setGroupMessages({ groupId: result.payload.groupId, messages: result.payload.messages }));
-        }
-      });
+      await dispatch(
+        sendGroupMessageThunk({
+          deviceId: group.deviceId,
+          groupId: group.groupId,
+          message: message.trim(),
+        })
+      ).unwrap();
+
+      setSuccessMessage("Message sent to group successfully.");
+      setMessage("");
     } catch (err) {
-      console.error('Failed to send message:', err);
-      setNewMessage(messageText); // Restore message on error
+      console.error("Failed to send message:", err);
+      setLocalError("Failed to send message. Please try again.");
     }
   };
 
-  const handleRefreshMessages = () => {
-    if (groupId && group) {
-      dispatch(fetchGroupMessagesThunk({ userGroupId: groupId })).then((result) => {
-        if (fetchGroupMessagesThunk.fulfilled.match(result)) {
-          dispatch(setGroupMessages({ groupId: result.payload.groupId, messages: result.payload.messages }));
-        }
-      });
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    }
-  };
-
-  const getMessageTypeIcon = (messageType: string) => {
-    switch (messageType) {
-      case 'IMAGE':
-        return '🖼️';
-      case 'VIDEO':
-        return '🎥';
-      case 'AUDIO':
-        return '🎵';
-      case 'DOCUMENT':
-        return '📄';
-      default:
-        return '💬';
-    }
-  };
+  const renderNotFound = () => (
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex">
+        <Sidebar
+          activeTab="groups"
+          showBackButton
+          backButtonText="Back to Groups"
+          onBackClick={() => router.push("/groups")}
+        />
+        <div className="flex-1 p-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center py-12">
+              <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Group not found</h3>
+              <p className="text-gray-600 mb-6">
+                The group you&apos;re looking for doesn&apos;t exist or has been removed.
+              </p>
+              <button
+                onClick={() => router.push("/groups")}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Back to Groups
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   if (!user) {
     return null;
   }
 
   if (!group) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex">
-          <Sidebar activeTab="groups" showBackButton backButtonText="Back to Groups" onBackClick={() => router.push('/groups')} />
-          <div className="flex-1 p-8">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center py-12">
-                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Group not found</h3>
-                <p className="text-gray-600 mb-6">
-                  The group you&apos;re looking for doesn&apos;t exist or has been removed.
-                </p>
-                <button
-                  onClick={() => router.push('/groups')}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                  Back to Groups
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return renderNotFound();
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
-        <Sidebar activeTab="groups" showBackButton backButtonText="Back to Groups" onBackClick={() => router.push('/groups')} />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Chat Header */}
-          <div className="bg-white border-b border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-lg font-bold">
+        <Sidebar
+          activeTab="groups"
+          showBackButton
+          backButtonText="Back to Groups"
+          onBackClick={() => router.push("/groups")}
+        />
+
+        <div className="flex-1 p-8">
+          <div className="max-w-3xl mx-auto space-y-8">
+            {/* Header */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+              <div className="p-6 flex items-center gap-4">
+                <div className="w-14 h-14 bg-green-600 text-white rounded-2xl flex items-center justify-center text-xl font-bold">
                   {group.groupName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">{group.groupName}</h1>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <h1 className="text-2xl font-semibold text-gray-900">{group.groupName}</h1>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                     <div className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
                       <span>{group.participantCount} participants</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <div className={`w-2 h-2 rounded-full ${pollingInterval ? 'bg-green-500' : 'bg-gray-400'}`} />
-                      <span>{pollingInterval ? 'Live' : 'Offline'}</span>
-                    </div>
+                    <div className="text-gray-500">Device #{group.deviceId}</div>
                   </div>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleRefreshMessages}
-                  disabled={fetchingMessages}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${fetchingMessages ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 border-b border-red-200 p-4">
-              <p className="text-red-700">{error}</p>
-            </div>
-          )}
-
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto">
-              {/* Loading State */}
-              {fetchingMessages && groupMessages.length === 0 && (
-                <div className="flex items-center justify-center py-12">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-                    <span className="text-gray-600">Loading messages...</span>
-                  </div>
+              {group.groupDescription && (
+                <div className="px-6 pb-6">
+                  <p className="text-sm text-gray-600">{group.groupDescription}</p>
                 </div>
               )}
+            </div>
 
-              {/* Empty State */}
-              {!fetchingMessages && groupMessages.length === 0 && (
-                <div className="text-center py-12">
-                  <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
-                  <p className="text-gray-600">
-                    Start a conversation by sending a message below
+            {/* Status Alerts */}
+            {successMessage && (
+              <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{successMessage}</span>
+              </div>
+            )}
+            {(localError || error) && (
+              <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                <AlertCircle className="w-4 h-4" />
+                <span>{localError || error}</span>
+              </div>
+            )}
+
+            {/* Send Form */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Send a Message</h2>
+              <form onSubmit={handleSendMessage} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Message
+                  </label>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type the message you want to send to this group..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                    rows={4}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Messages are sent instantly via your connected device.
                   </p>
                 </div>
-              )}
 
-              {/* Messages List */}
-              {groupMessages.length > 0 && (
-                <div className="space-y-4">
-                  {groupMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.isFromMe ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                          message.isFromMe
-                            ? 'bg-green-600 text-white'
-                            : 'bg-white text-gray-900 border border-gray-200'
-                        }`}
-                      >
-                        {/* Message Header */}
-                        {!message.isFromMe && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium text-gray-600">
-                              {message.senderName}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {formatTimestamp(message.timestamp)}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Message Content */}
-                        <div className="flex items-start gap-2">
-                          {message.messageType !== 'TEXT' && (
-                            <span className="text-lg flex-shrink-0">
-                              {getMessageTypeIcon(message.messageType)}
-                            </span>
-                          )}
-                          <div className="flex-1">
-                            <p className="text-sm leading-relaxed break-words">
-                              {message.content}
-                            </p>
-                            {message.mediaUrl && (
-                              <div className="mt-2">
-                                <a
-                                  href={message.mediaUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs underline hover:no-underline"
-                                >
-                                  View {message.mediaType || 'media'}
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Message Footer */}
-                        <div className={`flex items-center justify-end mt-2 gap-1 ${
-                          message.isFromMe ? 'text-green-100' : 'text-gray-400'
-                        }`}>
-                          <Clock className="w-3 h-3" />
-                          <span className="text-xs">
-                            {formatTimestamp(message.timestamp)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Message Input */}
-          <div className="bg-white border-t border-gray-200 p-6">
-            <div className="max-w-4xl mx-auto">
-              <form onSubmit={handleSendMessage} className="flex items-end gap-4">
-                <div className="flex-1">
-                  <textarea
-                    ref={messageInputRef}
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                    rows={1}
-                    style={{
-                      minHeight: '48px',
-                      maxHeight: '120px',
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage(e);
-                      }
-                    }}
-                  />
-                </div>
-                
                 <button
                   type="submit"
-                  disabled={!newMessage.trim() || sendingMessage}
-                  className="flex items-center justify-center w-12 h-12 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!message.trim() || sendingMessage}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {sendingMessage ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Sending...
+                    </>
                   ) : (
-                    <Send className="w-5 h-5" />
+                    <>
+                      <Send className="w-5 h-5" />
+                      Send Message
+                    </>
                   )}
                 </button>
               </form>
-              
-              <p className="text-xs text-gray-500 mt-2">
-                Press Enter to send, Shift+Enter for new line
-              </p>
             </div>
           </div>
         </div>
@@ -386,3 +202,4 @@ export default function GroupChatPage() {
     </div>
   );
 }
+

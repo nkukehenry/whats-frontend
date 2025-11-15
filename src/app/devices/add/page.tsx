@@ -367,8 +367,11 @@ export default function AddDevicePage() {
                         className="w-64 h-64 rounded-lg"
                       />
                     ) : (
-                      <div className="w-64 h-64 flex items-center justify-center text-gray-400 bg-gray-100 rounded-lg border border-dashed">
-                        <QrCode className="w-16 h-16" />
+                      <div className="w-64 h-64 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-300 gap-3">
+                        <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
+                        <div className="text-sm text-gray-600 text-center px-4">
+                          Waiting for QR code... keep this window open and try refreshing if it takes too long.
+                        </div>
                       </div>
                     )}
                   </div>

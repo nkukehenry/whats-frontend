@@ -20,6 +20,7 @@ import {
   ToggleLeft,
   ToggleRight,
   RefreshCw,
+  MessageSquare,
 } from "lucide-react";
 
 export default function GroupsPage() {
@@ -267,13 +268,13 @@ export default function GroupsPage() {
                           </div>
                         ) : (
                           <div className="flex gap-1">
-                            {/*<button
+                            <button
                               onClick={() => router.push(`/groups/${group.id}/chat`)}
                               className="p-1 text-blue-600 hover:bg-blue-100 rounded"
                               title="Open Chat"
                             >
                               <MessageSquare className="w-4 h-4" />
-                            </button>*/}
+                            </button>
                             <button
                               onClick={() => handleEditGroup(group)}
                               className="p-1 text-gray-600 hover:bg-gray-100 rounded"

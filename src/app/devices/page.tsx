@@ -163,8 +163,8 @@ export default function DevicesPage() {
           <div className="mb-4 flex flex-col items-center space-y-2">
             {qrInitializing ? (
               <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mb-2"></div>
-                <span className="text-gray-500 text-sm">Initializing device, waiting for QR...</span>
+                <Loader2 className="w-8 h-8 text-green-600 animate-spin mb-2" />
+                <span className="text-gray-500 text-sm text-center">Initializing device, waiting for QR...</span>
               </div>
             ) : (qrDataUrl || qr) ? (
               <>
@@ -177,7 +177,12 @@ export default function DevicesPage() {
                 </div>
                 <span className="text-gray-500 text-xs">Scan this QR with your WhatsApp app</span>
               </>
-            ) : null}
+            ) : (
+              <div className="flex flex-col items-center">
+                <Loader2 className="w-8 h-8 text-green-600 animate-spin mb-2" />
+                <span className="text-gray-500 text-sm text-center">Waiting for QR code from device...</span>
+              </div>
+            )}
             {/* Timer */}
             {qr && !expired && (
               <div className="text-xs text-blue-700">QR expires in {timer}s</div>
