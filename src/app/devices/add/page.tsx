@@ -52,33 +52,47 @@ export default function AddDevicePage() {
 
   // Poll device status using thunk with retry logic
   useEffect(() => {
-    if (result?.deviceId) {
-      let retryCount = 0;
-      const maxRetries = 5;
-      
-      const pollStatus = async () => {
-        try {
-          await dispatch(fetchDeviceStatusThunk({ deviceId: result.deviceId })).unwrap();
-          retryCount = 0; // Reset retry count on success
-          setConnectionIssues(false); // Clear connection issues on success
-        } catch (err) {
-          retryCount++;
-          console.warn(`Status poll attempt ${retryCount} failed:`, err);
-          
-          // If we've exceeded max retries, show connection issues but keep trying
-          if (retryCount >= maxRetries) {
-            console.error('Status polling failed multiple times, but continuing to retry...');
-            setConnectionIssues(true);
-            retryCount = 0; // Reset to keep trying
-          }
+    if (!result?.deviceId) return;
+
+    // Skip polling if we already received a QR code from initial response or previous checks
+    const alreadyHasQr =
+      Boolean(result.qrCodeData || result.qrCodeDataUrl) ||
+      Boolean(deviceStatus?.qr || deviceStatus?.qrDataUrl);
+
+    if (alreadyHasQr) return;
+
+    let retryCount = 0;
+    const maxRetries = 5;
+
+    const pollStatus = async () => {
+      try {
+        await dispatch(fetchDeviceStatusThunk({ deviceId: result.deviceId })).unwrap();
+        retryCount = 0; // Reset retry count on success
+        setConnectionIssues(false); // Clear connection issues on success
+      } catch (err) {
+        retryCount++;
+        console.warn(`Status poll attempt ${retryCount} failed:`, err);
+
+        // If we've exceeded max retries, show connection issues but keep trying
+        if (retryCount >= maxRetries) {
+          console.error('Status polling failed multiple times, but continuing to retry...');
+          setConnectionIssues(true);
+          retryCount = 0; // Reset to keep trying
         }
-      };
-      
-      const interval = setInterval(pollStatus, 5000);
-      pollStatus(); // Initial poll
-      return () => clearInterval(interval);
-    }
-  }, [result?.deviceId, dispatch]);
+      }
+    };
+
+    const interval = setInterval(pollStatus, 5000);
+    pollStatus(); // Initial poll
+    return () => clearInterval(interval);
+  }, [
+    result?.deviceId,
+    result?.qrCodeData,
+    result?.qrCodeDataUrl,
+    deviceStatus?.qr,
+    deviceStatus?.qrDataUrl,
+    dispatch,
+  ]);
 
   const handleBackToDevices = useCallback(() => {
     dispatch(fetchDevicesThunk()); // Refresh devices list
