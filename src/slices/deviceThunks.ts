@@ -3,6 +3,18 @@ import { apiFetch } from '../utils/api';
 import type { RootState } from '../store';
 import type { Device } from './deviceSlice';
 
+type DeviceStatusApiResponse = {
+  success: boolean;
+  data: {
+    deviceId: string | number;
+    status?: string;
+    qrCode?: {
+      qr?: string;
+      qrDataUrl?: string;
+    };
+  };
+};
+
 export const addDeviceThunk = createAsyncThunk<
   Device,
   { name: string; waNumber: string },
@@ -45,25 +57,11 @@ export const addDeviceThunk = createAsyncThunk<
       
       // Try to fetch status with retry logic
       const maxRetries = 3;
-      let statusResult: {
-        success: boolean;
-        data: {
-          qr?: string;
-          qrDataUrl?: string;
-          status?: string;
-        };
-      } | null = null;
+      let statusResult: DeviceStatusApiResponse | null = null;
       
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          statusResult = await apiFetch<{
-        success: boolean;
-        data: {
-          qr?: string;
-          qrDataUrl?: string;
-          status?: string;
-        };
-      }>(`/devices/status/${deviceId}`, {
+          statusResult = await apiFetch<DeviceStatusApiResponse>(`/devices/status/${deviceId}`, {
         method: 'GET',
         token,
       });
@@ -80,9 +78,10 @@ export const addDeviceThunk = createAsyncThunk<
       
       // Add status data if we got it (even if some attempts failed)
       if (statusResult?.data) {
-      if (statusResult.data.qr) device.qr = statusResult.data.qr;
-      if (statusResult.data.qrDataUrl) device.qrDataUrl = statusResult.data.qrDataUrl;
-      if (statusResult.data.status) device.status = statusResult.data.status;
+        const { status, qrCode } = statusResult.data;
+        if (qrCode?.qr) device.qr = qrCode.qr;
+        if (qrCode?.qrDataUrl) device.qrDataUrl = qrCode.qrDataUrl;
+        if (status) device.status = status;
       }
       
       return device;
@@ -149,20 +148,15 @@ export const fetchDeviceStatusThunk = createAsyncThunk<
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const result = await apiFetch<{
-        success: boolean;
-        data: {
-          qr?: string;
-          qrDataUrl?: string;
-          status?: string;
-        };
-      }>(`/devices/status/${deviceId}`, {
+      const result = await apiFetch<DeviceStatusApiResponse>(`/devices/status/${deviceId}`, {
         method: 'GET',
         token,
       });
       return {
         deviceId,
-        ...result.data,
+        status: result.data.status,
+        qr: result.data.qrCode?.qr,
+        qrDataUrl: result.data.qrCode?.qrDataUrl,
       };
     } catch (err: unknown) {
         lastError = err;
